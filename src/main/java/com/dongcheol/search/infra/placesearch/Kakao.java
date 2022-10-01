@@ -78,7 +78,7 @@ public class Kakao implements PlaceSearch {
                 .collect(Collectors.toList());
 
             PlaceSearchResp resp = PlaceSearchResp.builder()
-                .apiType("kakao")
+                .apiType(ApiTypeEnum.KAKAO)
                 .items(placeSearchItems)
                 .success(true)
                 .build();

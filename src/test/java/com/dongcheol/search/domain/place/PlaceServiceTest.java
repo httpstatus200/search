@@ -1,6 +1,7 @@
 package com.dongcheol.search.domain.place;
 
 import com.dongcheol.search.domain.place.dto.PlaceResp;
+import com.dongcheol.search.infra.placesearch.ApiTypeEnum;
 import com.dongcheol.search.infra.placesearch.PlaceSearch;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchItem;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
@@ -37,13 +38,13 @@ public class PlaceServiceTest {
         Mockito.when(kakaoApi.search(query))
             .thenReturn(
                 Mono.just(
-                    PlaceSearchResp.createFailResp("kakao")
+                    PlaceSearchResp.createFailResp(ApiTypeEnum.KAKAO)
                 )
             );
         Mockito.when(naverApi.search(query))
             .thenReturn(
                 Mono.just(
-                    PlaceSearchResp.createFailResp("naver")
+                    PlaceSearchResp.createFailResp(ApiTypeEnum.NAVER)
                 )
             );
 
@@ -59,7 +60,7 @@ public class PlaceServiceTest {
                 Mono.just(
                     PlaceSearchResp.builder()
                         .success(true)
-                        .apiType("kakao")
+                        .apiType(ApiTypeEnum.KAKAO)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
                                 add(
@@ -82,7 +83,7 @@ public class PlaceServiceTest {
         Mockito.when(naverApi.search(query))
             .thenReturn(
                 Mono.just(
-                    PlaceSearchResp.createFailResp("naver")
+                    PlaceSearchResp.createFailResp(ApiTypeEnum.NAVER)
                 )
             );
 

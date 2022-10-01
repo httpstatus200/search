@@ -78,7 +78,7 @@ public class Naver implements PlaceSearch {
                 .collect(Collectors.toList());
 
             PlaceSearchResp resp = PlaceSearchResp.builder()
-                .apiType("naver")
+                .apiType(ApiTypeEnum.NAVER)
                 .items(placeSearchItems)
                 .success(true)
                 .build();

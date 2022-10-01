@@ -2,6 +2,7 @@ package com.dongcheol.search.domain.place;
 
 import com.dongcheol.search.domain.place.dto.PlaceInfo;
 import com.dongcheol.search.domain.place.dto.PlaceResp;
+import com.dongcheol.search.infra.placesearch.ApiTypeEnum;
 import com.dongcheol.search.infra.placesearch.PlaceSearch;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
 import java.util.ArrayList;
@@ -40,16 +41,16 @@ public class PlaceService {
         long start = System.currentTimeMillis();
         Flux.merge(
                 naverApi.search(query)
-                    .onErrorReturn(PlaceSearchResp.createFailResp("naver")),
+                    .onErrorReturn(PlaceSearchResp.createFailResp(ApiTypeEnum.NAVER)),
                 kakaoApi.search(query)
-                    .onErrorReturn(PlaceSearchResp.createFailResp("kakao"))
+                    .onErrorReturn(PlaceSearchResp.createFailResp(ApiTypeEnum.KAKAO))
             )
             .parallel()
             .runOn(Schedulers.parallel())
             .subscribe(data -> {
                 LOGGER.debug(data.getApiType() + " API result=" + data);
                 if (data.isSuccess()) {
-                    placeRespMap.put(data.getApiType(), data);
+                    placeRespMap.put(data.getApiType().getName(), data);
                 }
                 countDownLatch.countDown();
             });
@@ -80,7 +81,7 @@ public class PlaceService {
                             .title(item.getTitle())
                             .address(item.getAddress())
                             .roadAddress(item.getRoadAddress())
-                            .provider(value.getApiType())
+                            .provider(value.getApiType().getName())
                             .build()
                         )
                         .collect(Collectors.toList())

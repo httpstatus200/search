@@ -63,18 +63,35 @@ public class Naver implements PlaceSearch {
     }
 
     private Mono<PlaceSearchResp> bodyToPlaceResp(String body) {
+        LOGGER.debug("Naver place API response body: " + body);
         ObjectMapper mapper = new ObjectMapper();
         try {
             Map<String, Object> data = mapper.readValue(body, Map.class);
             List<Map<String, String>> documents = (List) data.get("items");
             List<PlaceSearchItem> placeSearchItems = documents.stream()
+                .map(map -> {
+                    map.put(
+                        "title",
+                        map.get("title")
+                            .replaceAll("<b>", "")
+                            .replaceAll("</b>", "")
+                    );
+                    return map;
+//                    map.entrySet()
+//                        .stream()
+//                        .collect(Collectors.toMap(
+//                            Map.Entry::getKey,
+//                            entry -> entry.getValue()
+//                                .replaceAll("<b>", "")
+//                                .replaceAll("</b>", ""))
+//                        )
+                })
                 .map(map ->
                     PlaceSearchItem.builder()
                         .title(map.get("title"))
                         .address(map.get("address"))
                         .roadAddress(map.get("roadAddress"))
-                        .build()
-                )
+                        .build())
                 .collect(Collectors.toList());
 
             PlaceSearchResp resp = PlaceSearchResp.builder()

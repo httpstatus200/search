@@ -1,7 +1,7 @@
-package com.dongcheol.search.infra.place;
+package com.dongcheol.search.infra.placesearch;
 
-import com.dongcheol.search.infra.place.dto.PlaceInfo;
-import com.dongcheol.search.infra.place.dto.PlaceResp;
+import com.dongcheol.search.infra.placesearch.dto.PlaceSearchItem;
+import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -9,7 +9,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,30 +19,30 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 
 @Component
-public class Naver {
+@Qualifier("kakaoApi")
+public class Kakao implements PlaceSearch {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Naver.class);
-
-    private static final String BASE_URL = "https://openapi.naver.com/v1/search/local.json";
+    private static final Logger LOGGER = LoggerFactory.getLogger(Kakao.class);
+    private static final String BASE_URL = "https://dapi.kakao.com/v2/local/search/keyword.JSON";
     private static final int SEARCH_MAX_SIZE = 5;
+
     private final WebClient webClient;
 
-    public Naver(
-        @Value("${naverapi.place.client-id}") String clientId,
-        @Value("${naverapi.place.client-secret}") String clientSecret
-    ) {
+    public Kakao(@Value("${kakaoapi.place.key}") String apiKey) {
         this.webClient = WebClient.builder()
             .baseUrl(BASE_URL)
-            .defaultHeader("X-Naver-Client-Id", clientId)
-            .defaultHeader("X-Naver-Client-Secret", clientSecret)
+            .defaultHeader(
+                HttpHeaders.AUTHORIZATION,
+                new StringBuilder("KakaoAK ").append(apiKey).toString()
+            )
             .build();
     }
 
-    public Mono<PlaceResp> search(String query) {
+    public Mono<PlaceSearchResp> search(String query) {
         return this.webClient.get()
             .uri(uriBuilder -> uriBuilder
                 .queryParam("query", query)
-                .queryParam("display", SEARCH_MAX_SIZE)
+                .queryParam("size", SEARCH_MAX_SIZE)
                 .build()
             )
             .retrieve()
@@ -48,7 +50,7 @@ public class Naver {
                 Mono.error(
                     new WebClientResponseException(
                         response.rawStatusCode(),
-                        new StringBuilder("네이버 지역 검색 API 요청 오류 ")
+                        new StringBuilder("카카오 로컬 API 요청 오류 ")
                             .append(response.bodyToMono(String.class))
                             .toString(),
                         response.headers().asHttpHeaders(), null, null
@@ -57,34 +59,33 @@ public class Naver {
             )
             .bodyToMono(String.class)
             .flatMap(this::bodyToPlaceResp)
-            .doOnError(throwable -> LOGGER.error("검색 에러", throwable))
-            .onErrorResume(e -> Mono.empty());
+            .doOnError(throwable -> LOGGER.error("검색 에러 API", throwable));
     }
 
-    private Mono<PlaceResp> bodyToPlaceResp(String body) {
+    private Mono<PlaceSearchResp> bodyToPlaceResp(String body) {
         ObjectMapper mapper = new ObjectMapper();
         try {
             Map<String, Object> data = mapper.readValue(body, Map.class);
-            List<Map<String, String>> documents = (List) data.get("items");
-            List<PlaceInfo> placeInfos = documents.stream()
+            List<Map<String, String>> documents = (List) data.get("documents");
+            List<PlaceSearchItem> placeSearchItems = documents.stream()
                 .map(map ->
-                    PlaceInfo.builder()
-                        .name(map.get("title"))
-                        .address(map.get("address"))
-                        .roadAddress(map.get("roadAddress"))
+                    PlaceSearchItem.builder()
+                        .title(map.get("place_name"))
+                        .address(map.get("address_name"))
+                        .roadAddress(map.get("road_address_name"))
                         .build()
                 )
                 .collect(Collectors.toList());
 
-            PlaceResp resp = PlaceResp.builder()
-                .apiType("naver")
-                .result(placeInfos)
+            PlaceSearchResp resp = PlaceSearchResp.builder()
+                .apiType("kakao")
+                .items(placeSearchItems)
+                .success(true)
                 .build();
 
             return Mono.just(resp);
         } catch (JsonProcessingException e) {
             return Mono.error(e);
         }
-
     }
 }

@@ -1,4 +1,4 @@
-package com.dongcheol.search.infra.place.dto;
+package com.dongcheol.search.domain.place.dto;
 
 import java.util.List;
 import lombok.Builder;
@@ -10,6 +10,5 @@ import lombok.ToString;
 @Builder
 public class PlaceResp {
 
-    private String apiType;
-    private List<PlaceInfo> result;
+    private List<PlaceInfo> places;
 }

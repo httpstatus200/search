@@ -1,5 +1,7 @@
 package com.dongcheol.search.domain.place;
 
+import com.dongcheol.search.domain.place.dto.PlaceResp;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,8 +19,8 @@ public class PlaceController {
     }
 
     @GetMapping
-    public ResponseEntity<String> searchPlace(@RequestParam("q") String query) {
-        this.placeService.searchPlace(query);
-        return ResponseEntity.ok(query);
+    public ResponseEntity<PlaceResp> searchPlace(@RequestParam("q") String query) {
+        PlaceResp resp = this.placeService.searchPlace(query);
+        return ResponseEntity.status(HttpStatus.OK).body(resp);
     }
 }

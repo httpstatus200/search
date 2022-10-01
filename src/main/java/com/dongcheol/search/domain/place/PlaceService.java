@@ -7,6 +7,8 @@ import com.dongcheol.search.infra.placesearch.PlaceSearch;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -37,7 +39,7 @@ public class PlaceService {
     public PlaceResp searchPlace(String query) {
         CountDownLatch countDownLatch = new CountDownLatch(2);
 
-        Map<String, PlaceSearchResp> placeRespMap = new HashMap<>();
+        Map<String, List<PlaceInfo>> apiResultMap = new HashMap<>();
         long start = System.currentTimeMillis();
         Flux.merge(
                 naverApi.search(query)
@@ -47,10 +49,23 @@ public class PlaceService {
             )
             .parallel()
             .runOn(Schedulers.parallel())
-            .subscribe(data -> {
-                LOGGER.debug(data.getApiType() + " API result=" + data);
-                if (data.isSuccess()) {
-                    placeRespMap.put(data.getApiType().getName(), data);
+            .subscribe(resp -> {
+                LOGGER.debug(resp.getApiType() + " API resp=" + resp);
+                if (resp.isSuccess()) {
+                    List<PlaceInfo> placeInfos = resp.getItems()
+                        .stream()
+                        .map(item ->
+                            PlaceInfo
+                                .builder()
+                                .title(item.getTitle())
+                                .address(item.getAddress())
+                                .roadAddress(item.getRoadAddress())
+                                .provider(resp.getApiType().getName())
+                                .build()
+                        )
+                        .collect(Collectors.toCollection(() -> new LinkedList<>()));
+
+                    apiResultMap.put(resp.getApiType().getName(), placeInfos);
                 }
                 countDownLatch.countDown();
             });
@@ -63,35 +78,45 @@ public class PlaceService {
             throw new RuntimeException(e);
         }
 
-        LOGGER.debug("placeRespMap size=" + placeRespMap.size());
-        if (placeRespMap.size() == 0) {
+        LOGGER.debug("api result map size=" + apiResultMap.size());
+        if (apiResultMap.size() == 0) {
             return PlaceResp.builder()
                 .places(new ArrayList<>())
                 .build();
         }
 
-        if (placeRespMap.size() == 1) {
-            List<PlaceInfo> places = placeRespMap.values()
-                .stream()
-                .map(value ->
-                    value.getItems()
-                        .stream()
-                        .map(item -> PlaceInfo
-                            .builder()
-                            .title(item.getTitle())
-                            .address(item.getAddress())
-                            .roadAddress(item.getRoadAddress())
-                            .provider(value.getApiType().getName())
-                            .build()
-                        )
-                        .collect(Collectors.toList())
-                )
-                .collect(Collectors.toList())
-                .get(0);
-
+        if (apiResultMap.size() == 1) {
+            List<PlaceInfo> places = apiResultMap.values().iterator().next();
             return PlaceResp.builder().places(places).build();
         }
 
-        return null;
+        List<PlaceInfo> kakaoResult = apiResultMap.get(ApiTypeEnum.KAKAO.getName());
+        List<PlaceInfo> naverResult = apiResultMap.get(ApiTypeEnum.NAVER.getName());
+
+        List<PlaceInfo> orderedPlaces = new ArrayList();
+        Iterator<PlaceInfo> kIter = kakaoResult.iterator();
+        while (kIter.hasNext()) {
+            PlaceInfo kPlace = kIter.next();
+
+            Iterator<PlaceInfo> nIter = naverResult.iterator();
+            while (nIter.hasNext()) {
+                PlaceInfo nPlace = nIter.next();
+                String kTitle = kPlace.getTitle().replaceAll(" ", "");
+                String nTitle = nPlace.getTitle().replaceAll(" ", "");
+                if (kTitle.equals(nTitle)) {
+                    orderedPlaces.add(kPlace);
+                    kIter.remove();
+                    nIter.remove();
+                    break;
+                }
+            }
+        }
+
+        LOGGER.debug("kakaoResult size=" + kakaoResult.size());
+        LOGGER.debug("naverResult size=" + naverResult.size());
+        kakaoResult.stream().forEach(orderedPlaces::add);
+        naverResult.stream().forEach(orderedPlaces::add);
+
+        return PlaceResp.builder().places(orderedPlaces).build();
     }
 }

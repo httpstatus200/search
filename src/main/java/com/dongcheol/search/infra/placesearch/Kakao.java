@@ -63,6 +63,7 @@ public class Kakao implements PlaceSearch {
     }
 
     private Mono<PlaceSearchResp> bodyToPlaceResp(String body) {
+        LOGGER.debug("Kakao Place API response Body: " + body);
         ObjectMapper mapper = new ObjectMapper();
         try {
             Map<String, Object> data = mapper.readValue(body, Map.class);

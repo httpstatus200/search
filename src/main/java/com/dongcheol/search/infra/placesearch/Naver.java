@@ -77,14 +77,6 @@ public class Naver implements PlaceSearch {
                             .replaceAll("</b>", "")
                     );
                     return map;
-//                    map.entrySet()
-//                        .stream()
-//                        .collect(Collectors.toMap(
-//                            Map.Entry::getKey,
-//                            entry -> entry.getValue()
-//                                .replaceAll("<b>", "")
-//                                .replaceAll("</b>", ""))
-//                        )
                 })
                 .map(map ->
                     PlaceSearchItem.builder()

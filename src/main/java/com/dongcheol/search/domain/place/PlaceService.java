@@ -2,6 +2,8 @@ package com.dongcheol.search.domain.place;
 
 import com.dongcheol.search.domain.place.dto.PlaceInfo;
 import com.dongcheol.search.domain.place.dto.PlaceResp;
+import com.dongcheol.search.infra.logservice.PlaceQueryLogger;
+import com.dongcheol.search.infra.logservice.dto.PlaceQueryLog;
 import com.dongcheol.search.infra.placesearch.ApiTypeEnum;
 import com.dongcheol.search.infra.placesearch.PlaceSearch;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
@@ -27,16 +29,21 @@ public class PlaceService {
     private static final Logger LOGGER = LoggerFactory.getLogger(PlaceService.class);
     private PlaceSearch kakaoApi;
     private PlaceSearch naverApi;
+    private PlaceQueryLogger queryLogger;
 
     public PlaceService(
         @Qualifier("kakaoApi") PlaceSearch kakaoApi,
-        @Qualifier("naverApi") PlaceSearch naverApi
+        @Qualifier("naverApi") PlaceSearch naverApi,
+        PlaceQueryLogger placeQueryLogger
     ) {
         this.kakaoApi = kakaoApi;
         this.naverApi = naverApi;
+        this.queryLogger = placeQueryLogger;
     }
 
     public PlaceResp searchPlace(String query) {
+        this.queryLogger.put(new PlaceQueryLog(query));
+
         CountDownLatch countDownLatch = new CountDownLatch(2);
 
         Map<String, List<PlaceInfo>> apiResultMap = new HashMap<>();

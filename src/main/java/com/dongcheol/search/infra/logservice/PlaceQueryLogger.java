@@ -11,18 +11,14 @@ import org.springframework.stereotype.Component;
 public class PlaceQueryLogger {
 
     private final static ArrayList<PlaceQueryLog> queryLogs = new ArrayList<>();
-    int totalPut = 0;
-    int totalGet = 0;
 
     public synchronized void put(PlaceQueryLog qLog) {
         this.queryLogs.add(qLog);
-        totalPut += 1;
     }
 
     public synchronized List<PlaceQueryLog> getAllDel() {
         List<PlaceQueryLog> result = (List) this.queryLogs.clone();
         this.queryLogs.clear();
-        totalGet += result.size();
         return result;
     }
 }

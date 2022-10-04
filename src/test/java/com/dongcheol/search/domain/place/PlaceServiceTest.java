@@ -8,7 +8,6 @@ import com.dongcheol.search.infra.placesearch.dto.PlaceSearchItem;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -26,6 +25,8 @@ public class PlaceServiceTest {
     @Autowired
     private PlaceService placeService;
 
+    @MockBean
+    private QueryLogCountRepository queryLogCountRepository;
     @MockBean
     @Qualifier("kakaoApi")
     private PlaceSearch kakaoApi;
@@ -97,7 +98,6 @@ public class PlaceServiceTest {
     }
 
     @Test
-    @Disabled
     public void Search_SortedResult_When_HasSamePlaces() {
         String query = "국민은행";
         Mockito.when(kakaoApi.search(query))

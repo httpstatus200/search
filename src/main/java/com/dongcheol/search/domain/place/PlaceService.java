@@ -15,15 +15,12 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 
 @Service
 public class PlaceService {
@@ -49,26 +46,25 @@ public class PlaceService {
     public PlaceResp searchPlace(String query) {
         this.queryLogger.put(new PlaceQueryLog(query));
 
-        CountDownLatch countDownLatch = new CountDownLatch(2);
-
         Map<String, List<PlaceInfo>> apiResultMap = new HashMap<>();
         long start = System.currentTimeMillis();
+
         Flux.merge(
                 naverApi.search(query)
                     .onErrorReturn(PlaceSearchResp.createFailResp(ApiTypeEnum.NAVER)),
                 kakaoApi.search(query)
                     .onErrorReturn(PlaceSearchResp.createFailResp(ApiTypeEnum.KAKAO))
             )
-            .parallel()
-            .runOn(Schedulers.parallel())
-            .subscribe(resp -> {
+            .collectList()
+            .block()
+            .stream()
+            .forEach(resp -> {
                 LOGGER.debug(resp.getApiType() + " API resp=" + resp);
                 if (resp.isSuccess()) {
                     List<PlaceInfo> placeInfos = resp.getItems()
                         .stream()
                         .map(item ->
-                            PlaceInfo
-                                .builder()
+                            PlaceInfo.builder()
                                 .title(item.getTitle())
                                 .address(item.getAddress())
                                 .roadAddress(item.getRoadAddress())
@@ -79,16 +75,9 @@ public class PlaceService {
 
                     apiResultMap.put(resp.getApiType().getName(), placeInfos);
                 }
-                countDownLatch.countDown();
             });
-
-        try {
-            countDownLatch.await(10, TimeUnit.SECONDS);
-            long duration = System.currentTimeMillis() - start;
-            LOGGER.debug("place APIs execution time=" + duration + "ms");
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        long duration = System.currentTimeMillis() - start;
+        LOGGER.info("place APIs execution time=" + duration + "ms");
 
         LOGGER.debug("api result map size=" + apiResultMap.size());
         if (apiResultMap.size() == 0) {

@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -24,7 +25,6 @@ public class Kakao implements PlaceSearch {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Kakao.class);
     private static final String BASE_URL = "https://dapi.kakao.com/v2/local/search/keyword.JSON";
-    private static final int SEARCH_MAX_SIZE = 5;
 
     private final WebClient webClient;
 
@@ -38,11 +38,18 @@ public class Kakao implements PlaceSearch {
             .build();
     }
 
-    public Mono<PlaceSearchResp> search(String query) {
+    public Mono<PlaceSearchResp> search(
+        String query,
+        int page,
+        int size,
+        MultiValueMap<String, String> params
+    ) {
         return this.webClient.get()
             .uri(uriBuilder -> uriBuilder
                 .queryParam("query", query)
-                .queryParam("size", SEARCH_MAX_SIZE)
+                .queryParam("page", page)
+                .queryParam("size", size)
+                .queryParams(params)
                 .build()
             )
             .retrieve()

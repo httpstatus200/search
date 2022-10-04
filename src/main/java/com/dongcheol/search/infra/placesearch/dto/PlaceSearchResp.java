@@ -14,7 +14,7 @@ public class PlaceSearchResp {
 
     private ApiTypeEnum apiType;
     private boolean success;
-    private int itemCount = 0;
+    private int itemCount;
     private List<PlaceSearchItem> items;
 
     public static PlaceSearchResp createFailResp(ApiTypeEnum apiType) {

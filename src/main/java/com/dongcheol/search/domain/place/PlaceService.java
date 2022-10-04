@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -25,9 +27,9 @@ import reactor.core.publisher.Mono;
 @Service
 public class PlaceService {
 
-    private QueryLogCountRepository queryLogCountRepository;
-    private PlaceSearch kakaoApi;
-    private PlaceSearch naverApi;
+    private final QueryLogCountRepository queryLogCountRepository;
+    private final PlaceSearch kakaoApi;
+    private final PlaceSearch naverApi;
     private PlaceQueryLogger queryLogger;
 
     private static final Map<ApiTypeEnum, ApiTypeEnum> spareApiMapper = new HashMap() {{
@@ -36,6 +38,9 @@ public class PlaceService {
     }};
 
     private static final ApiTypeEnum[] API_PRIORITY = {ApiTypeEnum.KAKAO, ApiTypeEnum.NAVER};
+
+    private static final int DEFAULT_API_PAGE = 1;
+    private static final int DEFAULT_API_SIZE = 5;
 
     public PlaceService(
         QueryLogCountRepository queryLogCountRepository,
@@ -53,13 +58,18 @@ public class PlaceService {
         this.queryLogger.put(new PlaceQueryLog(query));
 
         List<PlaceSearchResp> respList = Flux.merge(
-                createApiCaller(ApiTypeEnum.KAKAO, query),
-                createApiCaller(ApiTypeEnum.NAVER, query)
+                createApiCaller(ApiTypeEnum.KAKAO, query, DEFAULT_API_PAGE, DEFAULT_API_SIZE, null),
+                createApiCaller(ApiTypeEnum.NAVER, query, DEFAULT_API_PAGE, DEFAULT_API_SIZE, null)
             )
             .collectList()
             .block();
 
         Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = classifyApiData(respList);
+        apiResultMap.entrySet()
+            .stream()
+            .forEach(e -> {
+                log.info("type= " + e.getKey() + ", value=" + e.getValue().toString());
+            });
 
         // 실패 케이스 찾기
         Map<ApiTypeEnum, PlaceSearchResp> failedApis = respList.stream()
@@ -87,7 +97,20 @@ public class PlaceService {
                     return;
                 }
 
-                PlaceSearchResp resp = createApiCaller(type, query).block();
+                MultiValueMap<String, String> params = null;
+                if (spareType == ApiTypeEnum.NAVER) {
+                    params = new LinkedMultiValueMap<String, String>() {{
+                        put("sort", new ArrayList<>());
+                        add("sort", "comment");
+                    }};
+                }
+                PlaceSearchResp resp = createApiCaller(
+                    type,
+                    query,
+                    DEFAULT_API_PAGE + 1,
+                    DEFAULT_API_SIZE,
+                    params
+                ).block();
                 if (resp.isSuccess()) {
                     List<PlaceInfo> result = apiRespToPlaceInfoList(resp);
                     apiResultMap.get(type).addAll(result);
@@ -96,6 +119,7 @@ public class PlaceService {
                 }
             });
 
+        // 부족한 결과 재조회 요청
         lackedApis.entrySet()
             .stream()
             .forEach(entry -> {
@@ -105,10 +129,23 @@ public class PlaceService {
                     return;
                 }
 
-                PlaceSearchResp resp = createApiCaller(spareType, query).block();
+                MultiValueMap<String, String> params = null;
+                if (spareType == ApiTypeEnum.NAVER) {
+                    params = new LinkedMultiValueMap<String, String>() {{
+                        put("sort", new ArrayList<>());
+                        add("sort", "comment");
+                    }};
+                }
+                PlaceSearchResp resp = createApiCaller(
+                    spareType,
+                    query,
+                    DEFAULT_API_PAGE + 1,
+                    DEFAULT_API_SIZE,
+                    params
+                ).block();
                 if (resp.isSuccess()) {
                     List<PlaceInfo> result = apiRespToPlaceInfoList(resp);
-                    apiResultMap.get(type).addAll(result);
+                    apiResultMap.get(spareType).addAll(result);
                 } else {
                     // 실패
                 }
@@ -134,13 +171,19 @@ public class PlaceService {
         return PlaceResp.builder().places(result).build();
     }
 
-    private Mono<PlaceSearchResp> createApiCaller(ApiTypeEnum type, String query) {
+    private Mono<PlaceSearchResp> createApiCaller(
+        ApiTypeEnum type,
+        String query,
+        int page,
+        int size,
+        MultiValueMap<String, String> params
+    ) {
         switch (type) {
             case NAVER:
-                return naverApi.search(query)
+                return naverApi.search(query, page, size, params)
                     .onErrorReturn(PlaceSearchResp.createFailResp(type));
             default:
-                return kakaoApi.search(query)
+                return kakaoApi.search(query, page, size, params)
                     .onErrorReturn(PlaceSearchResp.createFailResp(type));
         }
     }

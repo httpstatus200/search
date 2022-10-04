@@ -41,13 +41,13 @@ public class PlaceServiceTest {
     @Test
     public void Search_EmptyResult_When_FailedExternalApis() {
         String query = "은행";
-        Mockito.when(kakaoApi.search(query))
+        Mockito.when(kakaoApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
                     PlaceSearchResp.createFailResp(ApiTypeEnum.KAKAO)
                 )
             );
-        Mockito.when(naverApi.search(query))
+        Mockito.when(naverApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
                     PlaceSearchResp.createFailResp(ApiTypeEnum.NAVER)
@@ -61,7 +61,7 @@ public class PlaceServiceTest {
     @Test
     public void Search_HasResult_When_SuccOneApi() {
         String query = "은행";
-        Mockito.when(kakaoApi.search(query))
+        Mockito.when(kakaoApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
                     PlaceSearchResp.builder()
@@ -86,7 +86,7 @@ public class PlaceServiceTest {
                         .build()
                 )
             );
-        Mockito.when(naverApi.search(query))
+        Mockito.when(naverApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
                     PlaceSearchResp.createFailResp(ApiTypeEnum.NAVER)
@@ -100,7 +100,7 @@ public class PlaceServiceTest {
     @Test
     public void Search_SortedResult_When_HasSamePlaces() {
         String query = "국민은행";
-        Mockito.when(kakaoApi.search(query))
+        Mockito.when(kakaoApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
                     PlaceSearchResp.builder()
@@ -148,7 +148,7 @@ public class PlaceServiceTest {
                         .build()
                 )
             );
-        Mockito.when(naverApi.search(query))
+        Mockito.when(naverApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
                     PlaceSearchResp.builder()
@@ -204,7 +204,7 @@ public class PlaceServiceTest {
     @Test
     public void Search_When_HasSamePlaces() {
         String query = "국민은행";
-        Mockito.when(kakaoApi.search(query))
+        Mockito.when(kakaoApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
                     PlaceSearchResp.builder()
@@ -251,7 +251,8 @@ public class PlaceServiceTest {
                         )
                         .build()
                 )
-            )
+            );
+        Mockito.when(kakaoApi.search(query, 2, 5, null))
             .thenReturn(
                 Mono.just(
                     PlaceSearchResp.builder()
@@ -292,7 +293,7 @@ public class PlaceServiceTest {
                         .build()
                 )
             );
-        Mockito.when(naverApi.search(query))
+        Mockito.when(naverApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
                     PlaceSearchResp.builder()

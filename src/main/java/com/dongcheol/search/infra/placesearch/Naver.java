@@ -7,24 +7,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 @Qualifier("naverApi")
 public class Naver implements PlaceSearch {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Naver.class);
 
     private static final String BASE_URL = "https://openapi.naver.com/v1/search/local.json";
-    private static final int SEARCH_MAX_SIZE = 5;
+    private static final int DEFAULT_START = 1;
     private final WebClient webClient;
 
     public Naver(
@@ -38,11 +38,18 @@ public class Naver implements PlaceSearch {
             .build();
     }
 
-    public Mono<PlaceSearchResp> search(String query) {
+    public Mono<PlaceSearchResp> search(
+        String query,
+        int page,
+        int size,
+        MultiValueMap<String, String> params
+    ) {
         return this.webClient.get()
             .uri(uriBuilder -> uriBuilder
                 .queryParam("query", query)
-                .queryParam("display", SEARCH_MAX_SIZE)
+                .queryParam("display", size)
+                .queryParam("start", page)
+                .queryParams(params)
                 .build()
             )
             .retrieve()
@@ -59,11 +66,11 @@ public class Naver implements PlaceSearch {
             )
             .bodyToMono(String.class)
             .flatMap(this::bodyToPlaceResp)
-            .doOnError(throwable -> LOGGER.error("검색 에러", throwable));
+            .doOnError(throwable -> log.error("검색 에러", throwable));
     }
 
     private Mono<PlaceSearchResp> bodyToPlaceResp(String body) {
-        LOGGER.debug("Naver place API response body: " + body);
+        log.debug("Naver place API response body: " + body);
         ObjectMapper mapper = new ObjectMapper();
         try {
             Map<String, Object> data = mapper.readValue(body, Map.class);

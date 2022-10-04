@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 public class PlaceService {
@@ -30,6 +31,11 @@ public class PlaceService {
     private PlaceSearch kakaoApi;
     private PlaceSearch naverApi;
     private PlaceQueryLogger queryLogger;
+
+    private static final Map<ApiTypeEnum, ApiTypeEnum> spareApiMapper = new HashMap() {{
+        put(ApiTypeEnum.NAVER, ApiTypeEnum.KAKAO);
+        put(ApiTypeEnum.KAKAO, ApiTypeEnum.NAVER);
+    }};
 
     public PlaceService(
         QueryLogCountRepository queryLogCountRepository,
@@ -46,36 +52,17 @@ public class PlaceService {
     public PlaceResp searchPlace(String query) {
         this.queryLogger.put(new PlaceQueryLog(query));
 
-        Map<String, List<PlaceInfo>> apiResultMap = new HashMap<>();
         long start = System.currentTimeMillis();
 
-        Flux.merge(
-                naverApi.search(query)
-                    .onErrorReturn(PlaceSearchResp.createFailResp(ApiTypeEnum.NAVER)),
-                kakaoApi.search(query)
-                    .onErrorReturn(PlaceSearchResp.createFailResp(ApiTypeEnum.KAKAO))
+        List<PlaceSearchResp> respList = Flux.merge(
+                createApiCaller(ApiTypeEnum.KAKAO, query),
+                createApiCaller(ApiTypeEnum.NAVER, query)
             )
             .collectList()
-            .block()
-            .stream()
-            .forEach(resp -> {
-                LOGGER.debug(resp.getApiType() + " API resp=" + resp);
-                if (resp.isSuccess()) {
-                    List<PlaceInfo> placeInfos = resp.getItems()
-                        .stream()
-                        .map(item ->
-                            PlaceInfo.builder()
-                                .title(item.getTitle())
-                                .address(item.getAddress())
-                                .roadAddress(item.getRoadAddress())
-                                .provider(resp.getApiType().getName())
-                                .build()
-                        )
-                        .collect(Collectors.toCollection(() -> new LinkedList<>()));
+            .block();
 
-                    apiResultMap.put(resp.getApiType().getName(), placeInfos);
-                }
-            });
+        Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = classifyApiSuccData(respList);
+
         long duration = System.currentTimeMillis() - start;
         LOGGER.info("place APIs execution time=" + duration + "ms");
 
@@ -91,8 +78,8 @@ public class PlaceService {
             return PlaceResp.builder().places(places).build();
         }
 
-        List<PlaceInfo> kakaoResult = apiResultMap.get(ApiTypeEnum.KAKAO.getName());
-        List<PlaceInfo> naverResult = apiResultMap.get(ApiTypeEnum.NAVER.getName());
+        List<PlaceInfo> kakaoResult = apiResultMap.get(ApiTypeEnum.KAKAO);
+        List<PlaceInfo> naverResult = apiResultMap.get(ApiTypeEnum.NAVER);
 
         List<PlaceInfo> orderedPlaces = new ArrayList();
         Iterator<PlaceInfo> kIter = kakaoResult.iterator();
@@ -119,6 +106,42 @@ public class PlaceService {
         naverResult.stream().forEach(orderedPlaces::add);
 
         return PlaceResp.builder().places(orderedPlaces).build();
+    }
+
+    private Mono<PlaceSearchResp> createApiCaller(ApiTypeEnum type, String query) {
+        switch (type) {
+            case NAVER:
+                return naverApi.search(query)
+                    .onErrorReturn(PlaceSearchResp.createFailResp(type));
+            default:
+                return kakaoApi.search(query)
+                    .onErrorReturn(PlaceSearchResp.createFailResp(type));
+        }
+    }
+
+    private Map<ApiTypeEnum, List<PlaceInfo>> classifyApiSuccData(List<PlaceSearchResp> respList) {
+        Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = new HashMap<>();
+        respList.stream()
+            .forEach(resp -> {
+                LOGGER.debug(resp.getApiType() + " API resp=" + resp);
+                if (resp.isSuccess()) {
+                    List<PlaceInfo> placeInfos = resp.getItems()
+                        .stream()
+                        .map(item ->
+                            PlaceInfo.builder()
+                                .title(item.getTitle())
+                                .address(item.getAddress())
+                                .roadAddress(item.getRoadAddress())
+                                .provider(resp.getApiType().getName())
+                                .build()
+                        )
+                        .collect(Collectors.toCollection(() -> new LinkedList<>()));
+
+                    apiResultMap.put(resp.getApiType(), placeInfos);
+                }
+            });
+
+        return apiResultMap;
     }
 
     public PopularQueryResp queryTop10() {

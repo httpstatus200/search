@@ -80,6 +80,7 @@ public class Kakao implements PlaceSearch {
 
             PlaceSearchResp resp = PlaceSearchResp.builder()
                 .apiType(ApiTypeEnum.KAKAO)
+                .itemCount(placeSearchItems.size())
                 .items(placeSearchItems)
                 .success(true)
                 .build();

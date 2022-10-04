@@ -14,12 +14,14 @@ public class PlaceSearchResp {
 
     private ApiTypeEnum apiType;
     private boolean success;
+    private int itemCount = 0;
     private List<PlaceSearchItem> items;
 
     public static PlaceSearchResp createFailResp(ApiTypeEnum apiType) {
         return PlaceSearchResp.builder()
             .apiType(apiType)
             .success(false)
+            .itemCount(0)
             .items(new ArrayList<>())
             .build();
     }

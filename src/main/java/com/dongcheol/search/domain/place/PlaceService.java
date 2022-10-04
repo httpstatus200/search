@@ -65,11 +65,6 @@ public class PlaceService {
             .block();
 
         Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = classifyApiData(respList);
-        apiResultMap.entrySet()
-            .stream()
-            .forEach(e -> {
-                log.info("type= " + e.getKey() + ", value=" + e.getValue().toString());
-            });
 
         // 실패 케이스 찾기
         Map<ApiTypeEnum, PlaceSearchResp> failedApis = respList.stream()
@@ -145,7 +140,9 @@ public class PlaceService {
                 ).block();
                 if (resp.isSuccess()) {
                     List<PlaceInfo> result = apiRespToPlaceInfoList(resp);
-                    apiResultMap.get(spareType).addAll(result);
+
+                    int needCnt = DEFAULT_API_SIZE - entry.getValue().getItemCount();
+                    apiResultMap.get(spareType).addAll(result.subList(0, needCnt));
                 } else {
                     // 실패
                 }

@@ -81,6 +81,24 @@ public class PlaceServiceTest {
                                         .address("서울시")
                                         .build()
                                 );
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("우리은행")
+                                        .address("서울시")
+                                        .build()
+                                );
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("기업은행")
+                                        .address("서울시")
+                                        .build()
+                                );
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("카뱅")
+                                        .address("서울시")
+                                        .build()
+                                );
                             }}
                         )
                         .build()
@@ -94,7 +112,7 @@ public class PlaceServiceTest {
             );
 
         PlaceResp resp = placeService.searchPlace(query);
-        Assertions.assertEquals(resp.getPlaces().size(), 2);
+        Assertions.assertEquals(resp.getPlaces().size(), 5);
     }
 
     @Test
@@ -200,4 +218,7 @@ public class PlaceServiceTest {
         PlaceResp resp = placeService.searchPlace(query);
         Assertions.assertEquals(resp.getPlaces().size(), 7);
     }
+
+//    @Test
+//    public void Search__When_HasSamePlaces() {
 }

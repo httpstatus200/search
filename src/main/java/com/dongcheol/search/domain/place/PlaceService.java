@@ -11,22 +11,20 @@ import com.dongcheol.search.infra.placesearch.PlaceSearch;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 public class PlaceService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PlaceService.class);
     private QueryLogCountRepository queryLogCountRepository;
     private PlaceSearch kakaoApi;
     private PlaceSearch naverApi;
@@ -36,6 +34,8 @@ public class PlaceService {
         put(ApiTypeEnum.NAVER, ApiTypeEnum.KAKAO);
         put(ApiTypeEnum.KAKAO, ApiTypeEnum.NAVER);
     }};
+
+    private static final ApiTypeEnum[] API_PRIORITY = {ApiTypeEnum.KAKAO, ApiTypeEnum.NAVER};
 
     public PlaceService(
         QueryLogCountRepository queryLogCountRepository,
@@ -61,51 +61,26 @@ public class PlaceService {
             .collectList()
             .block();
 
-        Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = classifyApiSuccData(respList);
-
-        long duration = System.currentTimeMillis() - start;
-        LOGGER.info("place APIs execution time=" + duration + "ms");
-
-        LOGGER.debug("api result map size=" + apiResultMap.size());
-        if (apiResultMap.size() == 0) {
-            return PlaceResp.builder()
-                .places(new ArrayList<>())
-                .build();
+        // 우선순위로 정렬
+        List<PlaceInfo> placeInfos = new ArrayList<>();
+        Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = classifyApiData(respList);
+        for (ApiTypeEnum type : API_PRIORITY) {
+            placeInfos.addAll(apiResultMap.get(type));
         }
 
-        if (apiResultMap.size() == 1) {
-            List<PlaceInfo> places = apiResultMap.values().iterator().next();
-            return PlaceResp.builder().places(places).build();
-        }
-
-        List<PlaceInfo> kakaoResult = apiResultMap.get(ApiTypeEnum.KAKAO);
-        List<PlaceInfo> naverResult = apiResultMap.get(ApiTypeEnum.NAVER);
-
-        List<PlaceInfo> orderedPlaces = new ArrayList();
-        Iterator<PlaceInfo> kIter = kakaoResult.iterator();
-        while (kIter.hasNext()) {
-            PlaceInfo kPlace = kIter.next();
-
-            Iterator<PlaceInfo> nIter = naverResult.iterator();
-            while (nIter.hasNext()) {
-                PlaceInfo nPlace = nIter.next();
-                String kTitle = kPlace.getTitle().replaceAll(" ", "");
-                String nTitle = nPlace.getTitle().replaceAll(" ", "");
-                if (kTitle.equals(nTitle)) {
-                    orderedPlaces.add(kPlace);
-                    kIter.remove();
-                    nIter.remove();
-                    break;
-                }
+        List<PlaceInfo> result = new ArrayList<>();
+        Map<String, Boolean> map = new HashMap<>();
+        placeInfos.forEach(placeInfo -> {
+            String title = placeInfo.getTitle().replaceAll(" ", "");
+            if (map.containsKey(title)) {
+                return;
             }
-        }
 
-        LOGGER.debug("kakaoResult size=" + kakaoResult.size());
-        LOGGER.debug("naverResult size=" + naverResult.size());
-        kakaoResult.stream().forEach(orderedPlaces::add);
-        naverResult.stream().forEach(orderedPlaces::add);
+            map.put(title, true);
+            result.add(placeInfo);
+        });
 
-        return PlaceResp.builder().places(orderedPlaces).build();
+        return PlaceResp.builder().places(result).build();
     }
 
     private Mono<PlaceSearchResp> createApiCaller(ApiTypeEnum type, String query) {
@@ -119,29 +94,29 @@ public class PlaceService {
         }
     }
 
-    private Map<ApiTypeEnum, List<PlaceInfo>> classifyApiSuccData(List<PlaceSearchResp> respList) {
+    private Map<ApiTypeEnum, List<PlaceInfo>> classifyApiData(List<PlaceSearchResp> respList) {
         Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = new HashMap<>();
         respList.stream()
             .forEach(resp -> {
-                LOGGER.debug(resp.getApiType() + " API resp=" + resp);
-                if (resp.isSuccess()) {
-                    List<PlaceInfo> placeInfos = resp.getItems()
-                        .stream()
-                        .map(item ->
-                            PlaceInfo.builder()
-                                .title(item.getTitle())
-                                .address(item.getAddress())
-                                .roadAddress(item.getRoadAddress())
-                                .provider(resp.getApiType().getName())
-                                .build()
-                        )
-                        .collect(Collectors.toCollection(() -> new LinkedList<>()));
-
-                    apiResultMap.put(resp.getApiType(), placeInfos);
-                }
+                List<PlaceInfo> placeInfos = apiRespToPlaceInfoList(resp);
+                apiResultMap.put(resp.getApiType(), placeInfos);
             });
 
         return apiResultMap;
+    }
+
+    private List<PlaceInfo> apiRespToPlaceInfoList(PlaceSearchResp resp) {
+        return resp.getItems()
+            .stream()
+            .map(item ->
+                PlaceInfo.builder()
+                    .title(item.getTitle())
+                    .address(item.getAddress())
+                    .roadAddress(item.getRoadAddress())
+                    .provider(resp.getApiType().getName())
+                    .build()
+            )
+            .collect(Collectors.toCollection(() -> new LinkedList<>()));
     }
 
     public PopularQueryResp queryTop10() {

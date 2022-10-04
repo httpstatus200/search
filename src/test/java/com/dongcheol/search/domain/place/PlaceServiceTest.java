@@ -81,24 +81,6 @@ public class PlaceServiceTest {
                                         .address("서울시")
                                         .build()
                                 );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("우리은행")
-                                        .address("서울시")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("기업은행")
-                                        .address("서울시")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("카뱅")
-                                        .address("서울시")
-                                        .build()
-                                );
                             }}
                         )
                         .build()
@@ -112,7 +94,7 @@ public class PlaceServiceTest {
             );
 
         PlaceResp resp = placeService.searchPlace(query);
-        Assertions.assertEquals(resp.getPlaces().size(), 5);
+        Assertions.assertEquals(resp.getPlaces().size(), 2);
     }
 
     @Test
@@ -219,6 +201,119 @@ public class PlaceServiceTest {
         Assertions.assertEquals(resp.getPlaces().size(), 7);
     }
 
-//    @Test
-//    public void Search__When_HasSamePlaces() {
+    @Test
+    public void Search_When_HasSamePlaces() {
+        String query = "국민은행";
+        Mockito.when(kakaoApi.search(query))
+            .thenReturn(
+                Mono.just(
+                    PlaceSearchResp.builder()
+                        .success(true)
+                        .apiType(ApiTypeEnum.KAKAO)
+                        .items(
+                            new ArrayList<PlaceSearchItem>() {{
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("KB국민은행 여의도본점")
+                                        .address("서울 영등포구 여의도동 36-3")
+                                        .roadAddress("서울 영등포구 국제금융로8길 26")
+                                        .build()
+                                );
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("KB국민은행 서여의도영업부")
+                                        .address("서울 영등포구 여의도동 15-22")
+                                        .roadAddress("서울 영등포구 의사당대로 13")
+                                        .build()
+                                );
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("KB국민은행 여의도영업부")
+                                        .address("서울 영등포구 여의도동 36-3")
+                                        .roadAddress("서울 영등포구 국제금융로8길 26")
+                                        .build()
+                                );
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("KB국민은행 여의도전산센터")
+                                        .address("서울 영등포구 여의도동 15-22")
+                                        .roadAddress("서울 영등포구 의사당대로 13")
+                                        .build()
+                                );
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("KB국민은행 여의도종합금융센터")
+                                        .address("서울 영등포구 여의도동 35-3")
+                                        .roadAddress("서울 영등포구 여의나루로 50")
+                                        .build()
+                                );
+                            }}
+                        )
+                        .build()
+                )
+            )
+            .thenReturn(
+                Mono.just(
+                    PlaceSearchResp.builder()
+                        .success(true)
+                        .apiType(ApiTypeEnum.NAVER)
+                        .items(
+                            new ArrayList<PlaceSearchItem>() {{
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("KB국민은행 신관")
+                                        .address("서울특별시 영등포구 여의도동 45")
+                                        .roadAddress("서울특별시 영등포구 의사당대로 141")
+                                        .build()
+                                );
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("KB국민은행 여의도종합금융센터")
+                                        .address("서울특별시 영등포구 여의도동 35-3")
+                                        .roadAddress("서울특별시 영등포구 여의나루로 50 한국교직원공제회관")
+                                        .build()
+                                );
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("KB국민은행 증권타운")
+                                        .address("서울특별시 영등포구 여의도동 25-6")
+                                        .roadAddress("서울특별시 영등포구 여의나루로 67 신송빌딩")
+                                        .build()
+                                );
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("KB국민은행 서여의도영업부")
+                                        .address("서울특별시 영등포구 여의도동 15-22")
+                                        .roadAddress("서울특별시 영등포구 의사당대로 13")
+                                        .build()
+                                );
+                            }}
+                        )
+                        .build()
+                )
+            );
+        Mockito.when(naverApi.search(query))
+            .thenReturn(
+                Mono.just(
+                    PlaceSearchResp.builder()
+                        .success(true)
+                        .apiType(ApiTypeEnum.NAVER)
+                        .items(
+                            new ArrayList<PlaceSearchItem>() {{
+                                add(
+                                    PlaceSearchItem.builder()
+                                        .title("KB국민은행 여의도영업부")
+                                        .address("서울특별시 영등포구 여의도동 36-3")
+                                        .roadAddress("서울특별시 영등포구 국제금융로8길 26")
+                                        .build()
+                                );
+                            }}
+                        )
+                        .build()
+                )
+            );
+
+        PlaceResp resp = placeService.searchPlace(query);
+        Assertions.assertEquals(resp.getPlaces().size(), 7);
+    }
 }

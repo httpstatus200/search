@@ -52,8 +52,6 @@ public class PlaceService {
     public PlaceResp searchPlace(String query) {
         this.queryLogger.put(new PlaceQueryLog(query));
 
-        long start = System.currentTimeMillis();
-
         List<PlaceSearchResp> respList = Flux.merge(
                 createApiCaller(ApiTypeEnum.KAKAO, query),
                 createApiCaller(ApiTypeEnum.NAVER, query)
@@ -61,9 +59,62 @@ public class PlaceService {
             .collectList()
             .block();
 
-        // 우선순위로 정렬
-        List<PlaceInfo> placeInfos = new ArrayList<>();
         Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = classifyApiData(respList);
+
+        // 실패 케이스 찾기
+        Map<ApiTypeEnum, PlaceSearchResp> failedApis = respList.stream()
+            .filter(resp -> !resp.isSuccess())
+            .collect(Collectors.toMap(
+                resp -> resp.getApiType(),
+                resp -> resp
+            ));
+
+        // 조회 미달 케이스 찾기
+        Map<ApiTypeEnum, PlaceSearchResp> lackedApis = respList.stream()
+            .filter(resp -> resp.isSuccess() && resp.getItems().size() < 5)
+            .collect(Collectors.toMap(
+                resp -> resp.getApiType(),
+                resp -> resp
+            ));
+
+        // 실패 건 재조회 요청
+        failedApis.entrySet()
+            .stream()
+            .forEach(entry -> {
+                ApiTypeEnum type = entry.getKey();
+                ApiTypeEnum spareType = spareApiMapper.get(type);
+                if (lackedApis.containsKey(spareType) || failedApis.containsKey(spareType)) {
+                    return;
+                }
+
+                PlaceSearchResp resp = createApiCaller(type, query).block();
+                if (resp.isSuccess()) {
+                    List<PlaceInfo> result = apiRespToPlaceInfoList(resp);
+                    apiResultMap.get(type).addAll(result);
+                } else {
+                    // 실패
+                }
+            });
+
+        lackedApis.entrySet()
+            .stream()
+            .forEach(entry -> {
+                ApiTypeEnum type = entry.getKey();
+                ApiTypeEnum spareType = spareApiMapper.get(type);
+                if (lackedApis.containsKey(spareType) || failedApis.containsKey(spareType)) {
+                    return;
+                }
+
+                PlaceSearchResp resp = createApiCaller(spareType, query).block();
+                if (resp.isSuccess()) {
+                    List<PlaceInfo> result = apiRespToPlaceInfoList(resp);
+                    apiResultMap.get(type).addAll(result);
+                } else {
+                    // 실패
+                }
+            });
+
+        List<PlaceInfo> placeInfos = new ArrayList<>();
         for (ApiTypeEnum type : API_PRIORITY) {
             placeInfos.addAll(apiResultMap.get(type));
         }

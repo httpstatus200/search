@@ -1,5 +1,6 @@
 package com.dongcheol.search.domain.place;
 
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -17,4 +18,6 @@ public interface QueryLogCountRepository extends JpaRepository<QueryLogCount, Lo
     @Modifying
     @Query("update QueryLogCount q set q.count = q.count + :count where q.id = :id")
     int increaseCount(@Param("id") Long id, @Param("count") Long count);
+
+    List<QueryLogCount> findTop10ByOrderByCountDesc();
 }

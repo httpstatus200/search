@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -33,8 +35,8 @@ public class PlaceService {
     private final QueryLogCountRepository queryLogCountRepository;
     private final PlaceSearch kakaoApi;
     private final PlaceSearch naverApi;
-
     private final PlaceQueryLogService logService;
+    private final CacheManager cacheManager;
 
     private static final Map<ApiTypeEnum, ApiTypeEnum> SPARE_API_MAPPER = new HashMap() {{
         put(ApiTypeEnum.NAVER, ApiTypeEnum.KAKAO);
@@ -46,16 +48,20 @@ public class PlaceService {
     private static final int DEFAULT_API_PAGE = 1;
     private static final int DEFAULT_API_SIZE = 5;
 
+    private static final String SEARCH_PLACE_CACHE = "searchPlace";
+
     public PlaceService(
         QueryLogCountRepository queryLogCountRepository,
         @Qualifier("kakaoApi") PlaceSearch kakaoApi,
         @Qualifier("naverApi") PlaceSearch naverApi,
-        PlaceQueryLogService placeQueryLogService
+        PlaceQueryLogService placeQueryLogService,
+        CacheManager cacheManager
     ) {
         this.queryLogCountRepository = queryLogCountRepository;
         this.kakaoApi = kakaoApi;
         this.naverApi = naverApi;
         this.logService = placeQueryLogService;
+        this.cacheManager = cacheManager;
     }
 
     public PlaceResp searchPlace(String query) {
@@ -65,6 +71,13 @@ public class PlaceService {
         } catch (InterruptedException e) {
             log.error("쿼리 로그 저장 실패: " + e);
             // TODO: 저장 실패건 직접 저장 스토어 필요
+        }
+
+        Cache cache = this.cacheManager.getCache(this.SEARCH_PLACE_CACHE);
+        PlaceResp cachedResp = cache.get(query, PlaceResp.class);
+        if (cachedResp != null) {
+            log.debug("Cache hit. query=" + query);
+            return cachedResp;
         }
 
         Long start = System.currentTimeMillis();
@@ -108,7 +121,7 @@ public class PlaceService {
             dupCountMap.put(key, new PlaceInfoCounter(placeInfo));
         });
 
-        List<PlaceInfo> result = dupCountMap.values()
+        List<PlaceInfo> sortedList = dupCountMap.values()
             .stream()
             .sorted((v1, v2) -> (Integer.compare(v1.count, v2.count)) * -1)
             .map(v -> v.placeInfo)
@@ -117,10 +130,13 @@ public class PlaceService {
         Long end = System.currentTimeMillis() - start;
         log.debug("검색 처리 요청 시간: " + end + "ms");
 
-        return PlaceResp.builder()
-            .places(result)
-            .itemCount(result.size())
+        PlaceResp result = PlaceResp.builder()
+            .places(sortedList)
+            .itemCount(sortedList.size())
             .build();
+
+        cache.put(query, result);
+        return result;
     }
 
     private Mono<PlaceSearchResp> createApiCaller(

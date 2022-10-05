@@ -65,67 +65,18 @@ public class PlaceService {
             .collectList()
             .block();
 
-        Map<ApiTypeEnum, PlaceSearchResp> failedApis = respList.stream()
-            .filter(resp -> !resp.isSuccess())
-            .collect(Collectors.toMap(resp -> resp.getApiType(), resp -> resp));
-
-        Map<ApiTypeEnum, PlaceSearchResp> lackedApis = respList.stream()
-            .filter(resp -> resp.isSuccess() && resp.getItems().size() < 5)
-            .collect(Collectors.toMap(resp -> resp.getApiType(), resp -> resp));
-
         Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = classifyApiData(respList);
-        failedApis.entrySet()
+        ensureApiResponses(respList, query).entrySet()
             .stream()
-            .forEach(entry -> {
-                ApiTypeEnum originType = entry.getKey();
-                ApiTypeEnum spareType = SPARE_API_MAPPER.get(originType);
-                if (lackedApis.containsKey(spareType) || failedApis.containsKey(spareType)) {
-                    return;
-                }
+            .forEach(entry -> apiResultMap.get(entry.getKey()).addAll(entry.getValue()));
 
-                PlaceSearchResp resp = createSpareApiCaller(spareType, query).block();
-                if (resp.isSuccess()) {
-                    List<PlaceInfo> result = apiRespToPlaceInfoList(resp);
-                    apiResultMap.get(originType).addAll(result);
-                } else {
-                    // 실패
-                }
-            });
-
-        // 부족한 결과 재조회 요청
-        lackedApis.entrySet()
-            .stream()
-            .forEach(entry -> {
-                ApiTypeEnum originType = entry.getKey();
-                ApiTypeEnum spareType = SPARE_API_MAPPER.get(originType);
-                if (lackedApis.containsKey(spareType) || failedApis.containsKey(spareType)) {
-                    return;
-                }
-
-                PlaceSearchResp resp = createSpareApiCaller(spareType, query).block();
-                if (resp.isSuccess()) {
-                    List<PlaceInfo> result = apiRespToPlaceInfoList(resp);
-
-                    int needCnt = DEFAULT_API_SIZE - entry.getValue().getItemCount();
-
-                    Iterator<PlaceInfo> iter = result.iterator();
-                    int idx = 0;
-                    while (iter.hasNext() && idx < needCnt) {
-                        apiResultMap.get(spareType).add(iter.next());
-                        idx += 1;
-                    }
-                } else {
-                    // 실패
-                }
-            });
-
-        List<PlaceInfo> placeInfos = new ArrayList<>();
+        List<PlaceInfo> placesSortedPriority = new ArrayList<>();
         for (ApiTypeEnum type : API_PRIORITY) {
-            placeInfos.addAll(apiResultMap.get(type));
+            placesSortedPriority.addAll(apiResultMap.get(type));
         }
 
         Map<String, PlaceInfoCounter> dupCountMap = new LinkedHashMap<>();
-        placeInfos.forEach(placeInfo -> {
+        placesSortedPriority.forEach(placeInfo -> {
             String key = placeInfo.getTitle().replaceAll(" ", "");
             if (dupCountMap.containsKey(key)) {
                 dupCountMap.get(key).increase();
@@ -159,6 +110,65 @@ public class PlaceService {
                 return kakaoApi.search(query, page, size, params)
                     .onErrorReturn(PlaceSearchResp.createFailResp(type));
         }
+    }
+
+    private Map<ApiTypeEnum, List<PlaceInfo>> ensureApiResponses(
+        List<PlaceSearchResp> respList,
+        String query
+    ) {
+        Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = new HashMap<>();
+
+        Map<ApiTypeEnum, PlaceSearchResp> failedApis = respList.stream()
+            .filter(resp -> !resp.isSuccess())
+            .collect(Collectors.toMap(resp -> resp.getApiType(), resp -> resp));
+
+        Map<ApiTypeEnum, PlaceSearchResp> lackedApis = respList.stream()
+            .filter(resp -> resp.isSuccess() && resp.getItems().size() < 5)
+            .collect(Collectors.toMap(resp -> resp.getApiType(), resp -> resp));
+
+        failedApis.entrySet()
+            .stream()
+            .forEach(entry -> {
+                ApiTypeEnum spareType = SPARE_API_MAPPER.get(entry.getKey());
+                if (lackedApis.containsKey(spareType) || failedApis.containsKey(spareType)) {
+                    return;
+                }
+
+                PlaceSearchResp resp = createSpareApiCaller(spareType, query).block();
+                if (resp.isSuccess()) {
+                    List<PlaceInfo> result = apiRespToPlaceInfoList(resp);
+                    apiResultMap.put(spareType, result);
+                } else {
+                    // 실패
+                }
+            });
+
+        lackedApis.entrySet()
+            .stream()
+            .forEach(entry -> {
+                ApiTypeEnum spareType = SPARE_API_MAPPER.get(entry.getKey());
+                if (lackedApis.containsKey(spareType) || failedApis.containsKey(spareType)) {
+                    return;
+                }
+
+                PlaceSearchResp resp = createSpareApiCaller(spareType, query).block();
+                if (resp.isSuccess()) {
+                    List<PlaceInfo> result = apiRespToPlaceInfoList(resp);
+
+                    int needCnt = DEFAULT_API_SIZE - entry.getValue().getItemCount();
+
+                    Iterator<PlaceInfo> iter = result.iterator();
+                    int idx = 0;
+                    while (iter.hasNext() && idx < needCnt) {
+                        apiResultMap.put(spareType, result);
+                        idx += 1;
+                    }
+                } else {
+                    // 실패
+                }
+            });
+
+        return apiResultMap;
     }
 
     private Mono<PlaceSearchResp> createSpareApiCaller(

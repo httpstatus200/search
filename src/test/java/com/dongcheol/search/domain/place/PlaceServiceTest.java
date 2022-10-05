@@ -146,7 +146,59 @@ public class PlaceServiceTest {
     }
 
     @Test
-    public void Search_When_RetryAndHasSamePlace() {
+    public void Search_Retry_When_ApiFailed() {
+        String query = "은행";
+        Mockito.when(kakaoApi.search(query, 1, 5, null))
+            .thenReturn(
+                Mono.just(
+                    PlaceSearchResp.builder()
+                        .success(true)
+                        .apiType(ApiTypeEnum.KAKAO)
+                        .items(
+                            new ArrayList<PlaceSearchItem>() {{
+                                add(new PlaceSearchItem("A", "A", "A"));
+                                add(new PlaceSearchItem("B", "B", "B"));
+                                add(new PlaceSearchItem("C", "C", "C"));
+                                add(new PlaceSearchItem("D", "D", "D"));
+                                add(new PlaceSearchItem("E", "E", "E"));
+                            }}
+                        )
+                        .build()
+                )
+            );
+        Mockito.when(kakaoApi.search(query, 2, 5, null))
+            .thenReturn(
+                Mono.just(
+                    PlaceSearchResp.builder()
+                        .success(true)
+                        .apiType(ApiTypeEnum.NAVER)
+                        .items(
+                            new ArrayList<PlaceSearchItem>() {{
+                                add(new PlaceSearchItem("F", "F", "F"));
+                                add(new PlaceSearchItem("G", "G", "G"));
+                            }}
+                        )
+                        .build()
+                )
+            );
+        Mockito.when(naverApi.search(query, 1, 5, null))
+            .thenReturn(
+                Mono.just(
+                    PlaceSearchResp.createFailResp(ApiTypeEnum.NAVER)
+                )
+            );
+
+        PlaceResp resp = placeService.searchPlace(query);
+        Assertions.assertEquals(resp.getPlaces().size(), 7);
+        String result = resp.getPlaces()
+            .stream()
+            .map(p -> p.getTitle())
+            .collect(Collectors.joining("-"));
+        Assertions.assertEquals(result, "A-B-C-D-E-F-G");
+    }
+
+    @Test
+    public void Search_Retry_When_HasSamePlace() {
         String query = "은행";
         Mockito.when(kakaoApi.search(query, 1, 5, null))
             .thenReturn(

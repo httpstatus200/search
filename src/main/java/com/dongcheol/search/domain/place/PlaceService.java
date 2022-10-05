@@ -48,7 +48,7 @@ public class PlaceService {
     private static final int DEFAULT_API_PAGE = 1;
     private static final int DEFAULT_API_SIZE = 5;
 
-    private static final String SEARCH_PLACE_CACHE = "searchPlace";
+    private static final String PLACES_CACHE = "places";
 
     public PlaceService(
         QueryLogCountRepository queryLogCountRepository,
@@ -73,7 +73,7 @@ public class PlaceService {
             // TODO: 저장 실패건 직접 저장 스토어 필요
         }
 
-        Cache cache = this.cacheManager.getCache(this.SEARCH_PLACE_CACHE);
+        Cache cache = this.cacheManager.getCache(this.PLACES_CACHE);
         PlaceResp cachedResp = cache.get(query, PlaceResp.class);
         if (cachedResp != null) {
             log.debug("Cache hit. query=" + query);

@@ -95,7 +95,7 @@ public class PlaceServiceTest {
             );
 
         PlaceResp resp = placeService.searchPlace(query);
-        Assertions.assertEquals(resp.getPlaces().size(), 2);
+        Assertions.assertEquals(resp.getItemCount(), 2);
     }
 
     @Test
@@ -137,7 +137,7 @@ public class PlaceServiceTest {
             );
 
         PlaceResp resp = placeService.searchPlace(query);
-        Assertions.assertEquals(resp.getPlaces().size(), 5);
+        Assertions.assertEquals(resp.getItemCount(), 5);
         String result = resp.getPlaces()
             .stream()
             .map(p -> p.getTitle())
@@ -189,7 +189,7 @@ public class PlaceServiceTest {
             );
 
         PlaceResp resp = placeService.searchPlace(query);
-        Assertions.assertEquals(resp.getPlaces().size(), 7);
+        Assertions.assertEquals(resp.getItemCount(), 7);
         String result = resp.getPlaces()
             .stream()
             .map(p -> p.getTitle())
@@ -253,7 +253,7 @@ public class PlaceServiceTest {
             );
 
         PlaceResp resp = placeService.searchPlace(query);
-        Assertions.assertEquals(resp.getPlaces().size(), 10);
+        Assertions.assertEquals(resp.getItemCount(), 10);
         String result = resp.getPlaces()
             .stream()
             .map(p -> p.getTitle())

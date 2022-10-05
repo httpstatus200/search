@@ -10,5 +10,6 @@ import lombok.ToString;
 @Builder
 public class PlaceResp {
 
+    private int itemCount;
     private List<PlaceInfo> places;
 }

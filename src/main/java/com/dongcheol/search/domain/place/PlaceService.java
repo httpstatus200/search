@@ -92,7 +92,10 @@ public class PlaceService {
             .map(v -> v.placeInfo)
             .collect(Collectors.toList());
 
-        return PlaceResp.builder().places(result).build();
+        return PlaceResp.builder()
+            .places(result)
+            .itemCount(result.size())
+            .build();
     }
 
     private Mono<PlaceSearchResp> createApiCaller(

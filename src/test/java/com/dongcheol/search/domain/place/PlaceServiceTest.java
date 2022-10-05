@@ -8,14 +8,18 @@ import com.dongcheol.search.infra.placesearch.PlaceSearch;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchItem;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
@@ -39,6 +43,54 @@ public class PlaceServiceTest {
 
     @MockBean
     private PlaceQueryLogService queryLogger;
+
+    @MockBean
+    private CacheManager cacheManager;
+
+    @BeforeEach
+    public void beforeEach() {
+        Cache mockCache = new Cache() {
+            @Override
+            public String getName() {
+                return null;
+            }
+
+            @Override
+            public Object getNativeCache() {
+                return null;
+            }
+
+            @Override
+            public ValueWrapper get(Object key) {
+                return null;
+            }
+
+            @Override
+            public <T> T get(Object key, Class<T> type) {
+                return null;
+            }
+
+            @Override
+            public <T> T get(Object key, Callable<T> valueLoader) {
+                return null;
+            }
+
+            @Override
+            public void put(Object key, Object value) {
+            }
+
+            @Override
+            public void evict(Object key) {
+            }
+
+            @Override
+            public void clear() {
+            }
+        };
+
+        Mockito.when(this.cacheManager.getCache("places"))
+            .thenReturn(mockCache);
+    }
 
     @Test
     public void Search_EmptyResult_When_FailedExternalApis() {
@@ -171,7 +223,7 @@ public class PlaceServiceTest {
                 Mono.just(
                     PlaceSearchResp.builder()
                         .success(true)
-                        .apiType(ApiTypeEnum.NAVER)
+                        .apiType(ApiTypeEnum.KAKAO)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
                                 add(new PlaceSearchItem("F", "F", "F"));
@@ -223,7 +275,7 @@ public class PlaceServiceTest {
                 Mono.just(
                     PlaceSearchResp.builder()
                         .success(true)
-                        .apiType(ApiTypeEnum.NAVER)
+                        .apiType(ApiTypeEnum.KAKAO)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
                                 add(new PlaceSearchItem("F", "F", "F"));

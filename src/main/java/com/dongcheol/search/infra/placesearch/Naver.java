@@ -70,7 +70,7 @@ public class Naver implements PlaceSearch {
     }
 
     private Mono<PlaceSearchResp> bodyToPlaceResp(String body) {
-        log.debug("Naver place API response body: " + body);
+        log.debug("네이버 API 응답 바디: " + body);
         ObjectMapper mapper = new ObjectMapper();
         try {
             Map<String, Object> data = mapper.readValue(body, Map.class);

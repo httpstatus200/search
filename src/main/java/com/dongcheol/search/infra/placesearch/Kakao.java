@@ -7,8 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -19,11 +18,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 @Qualifier("kakaoApi")
 public class Kakao implements PlaceSearch {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Kakao.class);
     private static final String BASE_URL = "https://dapi.kakao.com/v2/local/search/keyword.JSON";
 
     private final WebClient webClient;
@@ -66,11 +65,11 @@ public class Kakao implements PlaceSearch {
             )
             .bodyToMono(String.class)
             .flatMap(this::bodyToPlaceResp)
-            .doOnError(throwable -> LOGGER.error("검색 에러 API", throwable));
+            .doOnError(throwable -> log.error("검색 에러 API", throwable));
     }
 
     private Mono<PlaceSearchResp> bodyToPlaceResp(String body) {
-        LOGGER.debug("Kakao Place API response Body: " + body);
+        log.debug("카카오 API 응답 바디: " + body);
         ObjectMapper mapper = new ObjectMapper();
         try {
             Map<String, Object> data = mapper.readValue(body, Map.class);

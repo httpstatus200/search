@@ -60,6 +60,7 @@ public class PlaceService {
     public PlaceResp searchPlace(String query) {
         this.queryLogger.put(new PlaceQueryLog(query));
 
+        Long start = System.currentTimeMillis();
         List<PlaceSearchResp> respList = Flux.merge(
                 createApiCaller(ApiTypeEnum.KAKAO, query, DEFAULT_API_PAGE, DEFAULT_API_SIZE, null),
                 createApiCaller(ApiTypeEnum.NAVER, query, DEFAULT_API_PAGE, DEFAULT_API_SIZE, null)
@@ -105,6 +106,9 @@ public class PlaceService {
             .sorted((v1, v2) -> (Integer.compare(v1.count, v2.count)) * -1)
             .map(v -> v.placeInfo)
             .collect(Collectors.toList());
+
+        Long end = System.currentTimeMillis() - start;
+        log.debug("검색 처리 요청 시간: " + end + "ms");
 
         return PlaceResp.builder()
             .places(result)
@@ -232,7 +236,7 @@ public class PlaceService {
             .map(lc -> new PopularQuery(lc.getQuery(), lc.getCount()))
             .collect(Collectors.toList());
 
-        return new PopularQueryResp(10, popularQueries);
+        return new PopularQueryResp(popularQueries.size(), popularQueries);
     }
 
     private class PlaceInfoCounter {

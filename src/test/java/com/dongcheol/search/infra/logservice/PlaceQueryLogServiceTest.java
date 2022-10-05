@@ -11,24 +11,24 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 
 @ExtendWith(SpringExtension.class)
-@Import({PlaceQueryLogger.class})
-public class PlaceQueryLoggerTest {
+@Import({PlaceQueryLogService.class})
+public class PlaceQueryLogServiceTest {
 
     @Autowired
-    private PlaceQueryLogger placeQueryLogger;
+    private PlaceQueryLogService placeQueryLogService;
 
     @BeforeEach
     public void beforeEach() {
-        this.placeQueryLogger.getAllDel();
+        this.placeQueryLogService.getAllDel();
     }
 
     @Test
     public void Put_And_getAllDel() {
-        this.placeQueryLogger.put(new PlaceQueryLog("은행"));
-        this.placeQueryLogger.put(new PlaceQueryLog("곱창"));
-        this.placeQueryLogger.put(new PlaceQueryLog("베이커리"));
+        this.placeQueryLogService.put(new PlaceQueryLog("은행"));
+        this.placeQueryLogService.put(new PlaceQueryLog("곱창"));
+        this.placeQueryLogService.put(new PlaceQueryLog("베이커리"));
 
-        Assertions.assertEquals(this.placeQueryLogger.getAllDel().size(), 3);
-        Assertions.assertEquals(this.placeQueryLogger.getAllDel().size(), 0);
+        Assertions.assertEquals(this.placeQueryLogService.getAllDel().size(), 3);
+        Assertions.assertEquals(this.placeQueryLogService.getAllDel().size(), 0);
     }
 }

@@ -6,7 +6,7 @@ import com.dongcheol.search.domain.place.dto.PopularQuery;
 import com.dongcheol.search.domain.place.dto.PopularQueryResp;
 import com.dongcheol.search.global.ErrorCode;
 import com.dongcheol.search.global.ExternalApiException;
-import com.dongcheol.search.infra.logservice.PlaceQueryLogger;
+import com.dongcheol.search.infra.logservice.PlaceQueryLogService;
 import com.dongcheol.search.infra.logservice.dto.PlaceQueryLog;
 import com.dongcheol.search.infra.placesearch.ApiTypeEnum;
 import com.dongcheol.search.infra.placesearch.PlaceSearch;
@@ -33,7 +33,8 @@ public class PlaceService {
     private final QueryLogCountRepository queryLogCountRepository;
     private final PlaceSearch kakaoApi;
     private final PlaceSearch naverApi;
-    private PlaceQueryLogger queryLogger;
+
+    private final PlaceQueryLogService logService;
 
     private static final Map<ApiTypeEnum, ApiTypeEnum> SPARE_API_MAPPER = new HashMap() {{
         put(ApiTypeEnum.NAVER, ApiTypeEnum.KAKAO);
@@ -49,16 +50,22 @@ public class PlaceService {
         QueryLogCountRepository queryLogCountRepository,
         @Qualifier("kakaoApi") PlaceSearch kakaoApi,
         @Qualifier("naverApi") PlaceSearch naverApi,
-        PlaceQueryLogger placeQueryLogger
+        PlaceQueryLogService placeQueryLogService
     ) {
         this.queryLogCountRepository = queryLogCountRepository;
         this.kakaoApi = kakaoApi;
         this.naverApi = naverApi;
-        this.queryLogger = placeQueryLogger;
+        this.logService = placeQueryLogService;
     }
 
     public PlaceResp searchPlace(String query) {
-        this.queryLogger.put(new PlaceQueryLog(query));
+        PlaceQueryLog qLog = new PlaceQueryLog(query);
+        try {
+            this.logService.put(qLog);
+        } catch (InterruptedException e) {
+            log.error("쿼리 로그 저장 실패: " + e);
+            // TODO: 저장 실패건 직접 저장 스토어 필요
+        }
 
         Long start = System.currentTimeMillis();
         List<PlaceSearchResp> respList = Flux.merge(

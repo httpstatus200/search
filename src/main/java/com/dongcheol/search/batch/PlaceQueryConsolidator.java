@@ -2,7 +2,7 @@ package com.dongcheol.search.batch;
 
 import com.dongcheol.search.domain.place.QueryLogCount;
 import com.dongcheol.search.domain.place.QueryLogCountRepository;
-import com.dongcheol.search.infra.logservice.PlaceQueryLogger;
+import com.dongcheol.search.infra.logservice.PlaceQueryLogStore;
 import com.dongcheol.search.infra.logservice.dto.PlaceQueryLog;
 import java.util.HashMap;
 import java.util.List;
@@ -16,19 +16,20 @@ import org.springframework.stereotype.Component;
 @Component
 public class PlaceQueryConsolidator {
 
-    private PlaceQueryLogger placeQueryLogger;
+    private PlaceQueryLogStore placeQueryLogStore;
 
     private QueryLogCountRepository queryLogCountRepository;
 
-    public PlaceQueryConsolidator(PlaceQueryLogger placeQueryLogger,
+    public PlaceQueryConsolidator(PlaceQueryLogStore placeQueryLogStore,
         QueryLogCountRepository queryLogCountRepository) {
-        this.placeQueryLogger = placeQueryLogger;
+        this.placeQueryLogStore = placeQueryLogStore;
         this.queryLogCountRepository = queryLogCountRepository;
     }
 
     @Scheduled(fixedDelay = 10_000)
     public void queryCount() {
-        List<PlaceQueryLog> list = placeQueryLogger.getAllDel();
+        // TODO: 에러로 인한 데이터 유실을 막기 위해 가져온 로그 정보 백업 필요
+        List<PlaceQueryLog> list = placeQueryLogStore.getAllDel();
         Map<String, Integer> counter = new HashMap<>();
 
         for (PlaceQueryLog log : list) {

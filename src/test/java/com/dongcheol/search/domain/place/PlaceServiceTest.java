@@ -2,7 +2,7 @@ package com.dongcheol.search.domain.place;
 
 import com.dongcheol.search.domain.place.dto.PlaceResp;
 import com.dongcheol.search.global.ExternalApiException;
-import com.dongcheol.search.infra.logservice.PlaceQueryLogger;
+import com.dongcheol.search.infra.logservice.PlaceQueryLogService;
 import com.dongcheol.search.infra.placesearch.ApiTypeEnum;
 import com.dongcheol.search.infra.placesearch.PlaceSearch;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchItem;
@@ -38,7 +38,7 @@ public class PlaceServiceTest {
     private PlaceSearch naverApi;
 
     @MockBean
-    private PlaceQueryLogger queryLogger;
+    private PlaceQueryLogService queryLogger;
 
     @Test
     public void Search_EmptyResult_When_FailedExternalApis() {

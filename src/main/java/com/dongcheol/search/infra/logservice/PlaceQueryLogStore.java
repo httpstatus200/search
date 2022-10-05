@@ -8,17 +8,20 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class PlaceQueryLogger {
+public class PlaceQueryLogStore {
 
+    private List<String> backupList = new ArrayList<>();
     private final static ArrayList<PlaceQueryLog> queryLogs = new ArrayList<>();
 
     public synchronized void put(PlaceQueryLog qLog) {
+        qLog.getDatetime();
         this.queryLogs.add(qLog);
     }
 
     public synchronized List<PlaceQueryLog> getAllDel() {
         List<PlaceQueryLog> result = (List) this.queryLogs.clone();
         this.queryLogs.clear();
+        backupList.add(result.toString());
         return result;
     }
 }

@@ -4,6 +4,8 @@ import com.dongcheol.search.domain.place.dto.PlaceInfo;
 import com.dongcheol.search.domain.place.dto.PlaceResp;
 import com.dongcheol.search.domain.place.dto.PopularQuery;
 import com.dongcheol.search.domain.place.dto.PopularQueryResp;
+import com.dongcheol.search.global.ErrorCode;
+import com.dongcheol.search.global.ExternalApiException;
 import com.dongcheol.search.infra.logservice.PlaceQueryLogger;
 import com.dongcheol.search.infra.logservice.dto.PlaceQueryLog;
 import com.dongcheol.search.infra.placesearch.ApiTypeEnum;
@@ -66,7 +68,19 @@ public class PlaceService {
             .block();
 
         Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = classifyApiData(respList);
-        ensureApiResponses(respList, query).entrySet()
+        Map<ApiTypeEnum, PlaceSearchResp> failedApis = respList.stream()
+            .filter(resp -> !resp.isSuccess())
+            .collect(Collectors.toMap(resp -> resp.getApiType(), resp -> resp));
+
+        if (failedApis.size() == apiResultMap.size()) {
+            throw new ExternalApiException("요청한 모든 API가 실패했습니다.", ErrorCode.EXTERNAL_API_ERRROR);
+        }
+
+        Map<ApiTypeEnum, PlaceSearchResp> lackedApis = respList.stream()
+            .filter(resp -> resp.isSuccess() && resp.getItems().size() < 5)
+            .collect(Collectors.toMap(resp -> resp.getApiType(), resp -> resp));
+
+        ensureApiResponses(failedApis, lackedApis, query).entrySet()
             .stream()
             .forEach(entry -> apiResultMap.get(entry.getKey()).addAll(entry.getValue()));
 
@@ -116,18 +130,11 @@ public class PlaceService {
     }
 
     private Map<ApiTypeEnum, List<PlaceInfo>> ensureApiResponses(
-        List<PlaceSearchResp> respList,
+        Map<ApiTypeEnum, PlaceSearchResp> failedApis,
+        Map<ApiTypeEnum, PlaceSearchResp> lackedApis,
         String query
     ) {
         Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = new HashMap<>();
-
-        Map<ApiTypeEnum, PlaceSearchResp> failedApis = respList.stream()
-            .filter(resp -> !resp.isSuccess())
-            .collect(Collectors.toMap(resp -> resp.getApiType(), resp -> resp));
-
-        Map<ApiTypeEnum, PlaceSearchResp> lackedApis = respList.stream()
-            .filter(resp -> resp.isSuccess() && resp.getItems().size() < 5)
-            .collect(Collectors.toMap(resp -> resp.getApiType(), resp -> resp));
 
         failedApis.entrySet()
             .stream()

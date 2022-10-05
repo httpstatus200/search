@@ -1,6 +1,7 @@
 package com.dongcheol.search.domain.place;
 
 import com.dongcheol.search.domain.place.dto.PlaceResp;
+import com.dongcheol.search.global.ExternalApiException;
 import com.dongcheol.search.infra.logservice.PlaceQueryLogger;
 import com.dongcheol.search.infra.placesearch.ApiTypeEnum;
 import com.dongcheol.search.infra.placesearch.PlaceSearch;
@@ -55,8 +56,7 @@ public class PlaceServiceTest {
                 )
             );
 
-        PlaceResp resp = placeService.searchPlace(query);
-        Assertions.assertEquals(resp.getPlaces().size(), 0);
+        Assertions.assertThrows(ExternalApiException.class, () -> placeService.searchPlace(query));
     }
 
     @Test

@@ -11,6 +11,8 @@ import com.dongcheol.search.infra.placesearch.PlaceSearch;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +144,13 @@ public class PlaceService {
                     List<PlaceInfo> result = apiRespToPlaceInfoList(resp);
 
                     int needCnt = DEFAULT_API_SIZE - entry.getValue().getItemCount();
-                    apiResultMap.get(spareType).addAll(result.subList(0, needCnt));
+
+                    Iterator<PlaceInfo> iter = result.iterator();
+                    int idx = 0;
+                    while (iter.hasNext() && idx < needCnt) {
+                        apiResultMap.get(spareType).add(iter.next());
+                        idx += 1;
+                    }
                 } else {
                     // 실패
                 }
@@ -153,17 +161,22 @@ public class PlaceService {
             placeInfos.addAll(apiResultMap.get(type));
         }
 
-        List<PlaceInfo> result = new ArrayList<>();
-        Map<String, Boolean> map = new HashMap<>();
+        Map<String, PlaceInfoCounter> dupCountMap = new LinkedHashMap<>();
         placeInfos.forEach(placeInfo -> {
-            String title = placeInfo.getTitle().replaceAll(" ", "");
-            if (map.containsKey(title)) {
+            String key = placeInfo.getTitle().replaceAll(" ", "");
+            if (dupCountMap.containsKey(key)) {
+                dupCountMap.get(key).increase();
                 return;
             }
 
-            map.put(title, true);
-            result.add(placeInfo);
+            dupCountMap.put(key, new PlaceInfoCounter(placeInfo));
         });
+
+        List<PlaceInfo> result = dupCountMap.values()
+            .stream()
+            .sorted((v1, v2) -> (Integer.compare(v1.count, v2.count)) * -1)
+            .map(v -> v.placeInfo)
+            .collect(Collectors.toList());
 
         return PlaceResp.builder().places(result).build();
     }
@@ -217,5 +230,20 @@ public class PlaceService {
             .collect(Collectors.toList());
 
         return new PopularQueryResp(10, popularQueries);
+    }
+
+    private class PlaceInfoCounter {
+
+        PlaceInfo placeInfo;
+        int count;
+
+        public PlaceInfoCounter(PlaceInfo placeInfo) {
+            this.placeInfo = placeInfo;
+            this.count = 1;
+        }
+
+        public void increase() {
+            this.count += 1;
+        }
     }
 }

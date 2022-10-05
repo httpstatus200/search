@@ -7,6 +7,7 @@ import com.dongcheol.search.infra.placesearch.PlaceSearch;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchItem;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -99,7 +100,7 @@ public class PlaceServiceTest {
 
     @Test
     public void Search_SortedResult_When_HasSamePlaces() {
-        String query = "국민은행";
+        String query = "은행";
         Mockito.when(kakaoApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
@@ -108,41 +109,10 @@ public class PlaceServiceTest {
                         .apiType(ApiTypeEnum.KAKAO)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 여의도본점")
-                                        .address("서울 영등포구 여의도동 36-3")
-                                        .roadAddress("서울 영등포구 국제금융로8길 26")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 서여의도영업부")
-                                        .address("서울 영등포구 여의도동 15-22")
-                                        .roadAddress("서울 영등포구 의사당대로 13")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 여의도영업부")
-                                        .address("서울 영등포구 여의도동 36-3")
-                                        .roadAddress("서울 영등포구 국제금융로8길 26")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 여의도전산센터")
-                                        .address("서울 영등포구 여의도동 15-22")
-                                        .roadAddress("서울 영등포구 의사당대로 13")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 여의도종합금융센터")
-                                        .address("서울 영등포구 여의도동 35-3")
-                                        .roadAddress("서울 영등포구 여의나루로 50")
-                                        .build()
-                                );
+                                add(new PlaceSearchItem("A", "A", "A"));
+                                add(new PlaceSearchItem("B", "B", "B"));
+                                add(new PlaceSearchItem("C", "C", "C"));
+                                add(new PlaceSearchItem("D", "D", "D"));
                             }}
                         )
                         .build()
@@ -156,41 +126,10 @@ public class PlaceServiceTest {
                         .apiType(ApiTypeEnum.NAVER)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 여의도영업부")
-                                        .address("서울특별시 영등포구 여의도동 36-3")
-                                        .roadAddress("서울특별시 영등포구 국제금융로8길 26")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 신관")
-                                        .address("서울특별시 영등포구 여의도동 45")
-                                        .roadAddress("서울특별시 영등포구 의사당대로 141")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 여의도종합금융센터")
-                                        .address("서울특별시 영등포구 여의도동 35-3")
-                                        .roadAddress("서울특별시 영등포구 여의나루로 50 한국교직원공제회관")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 증권타운")
-                                        .address("서울특별시 영등포구 여의도동 25-6")
-                                        .roadAddress("서울특별시 영등포구 여의나루로 67 신송빌딩")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 서여의도영업부")
-                                        .address("서울특별시 영등포구 여의도동 15-22")
-                                        .roadAddress("서울특별시 영등포구 의사당대로 13")
-                                        .build()
-                                );
+                                add(new PlaceSearchItem("A", "A", "A"));
+                                add(new PlaceSearchItem("E", "E", "E"));
+                                add(new PlaceSearchItem("D", "D", "D"));
+                                add(new PlaceSearchItem("C", "C", "C"));
                             }}
                         )
                         .build()
@@ -198,12 +137,17 @@ public class PlaceServiceTest {
             );
 
         PlaceResp resp = placeService.searchPlace(query);
-        Assertions.assertEquals(resp.getPlaces().size(), 7);
+        Assertions.assertEquals(resp.getPlaces().size(), 5);
+        String result = resp.getPlaces()
+            .stream()
+            .map(p -> p.getTitle())
+            .collect(Collectors.joining("-"));
+        Assertions.assertEquals(result, "A-C-D-B-E");
     }
 
     @Test
-    public void Search_When_HasSamePlaces() {
-        String query = "국민은행";
+    public void Search_When_RetryAndHasSamePlace() {
+        String query = "은행";
         Mockito.when(kakaoApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
@@ -212,41 +156,11 @@ public class PlaceServiceTest {
                         .apiType(ApiTypeEnum.KAKAO)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 여의도본점")
-                                        .address("서울 영등포구 여의도동 36-3")
-                                        .roadAddress("서울 영등포구 국제금융로8길 26")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 서여의도영업부")
-                                        .address("서울 영등포구 여의도동 15-22")
-                                        .roadAddress("서울 영등포구 의사당대로 13")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 여의도영업부")
-                                        .address("서울 영등포구 여의도동 36-3")
-                                        .roadAddress("서울 영등포구 국제금융로8길 26")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 여의도전산센터")
-                                        .address("서울 영등포구 여의도동 15-22")
-                                        .roadAddress("서울 영등포구 의사당대로 13")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 여의도종합금융센터")
-                                        .address("서울 영등포구 여의도동 35-3")
-                                        .roadAddress("서울 영등포구 여의나루로 50")
-                                        .build()
-                                );
+                                add(new PlaceSearchItem("A", "A", "A"));
+                                add(new PlaceSearchItem("B", "B", "B"));
+                                add(new PlaceSearchItem("C", "C", "C"));
+                                add(new PlaceSearchItem("D", "D", "D"));
+                                add(new PlaceSearchItem("E", "E", "E"));
                             }}
                         )
                         .build()
@@ -260,34 +174,11 @@ public class PlaceServiceTest {
                         .apiType(ApiTypeEnum.NAVER)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 신관")
-                                        .address("서울특별시 영등포구 여의도동 45")
-                                        .roadAddress("서울특별시 영등포구 의사당대로 141")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 여의도종합금융센터")
-                                        .address("서울특별시 영등포구 여의도동 35-3")
-                                        .roadAddress("서울특별시 영등포구 여의나루로 50 한국교직원공제회관")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 증권타운")
-                                        .address("서울특별시 영등포구 여의도동 25-6")
-                                        .roadAddress("서울특별시 영등포구 여의나루로 67 신송빌딩")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 서여의도영업부")
-                                        .address("서울특별시 영등포구 여의도동 15-22")
-                                        .roadAddress("서울특별시 영등포구 의사당대로 13")
-                                        .build()
-                                );
+                                add(new PlaceSearchItem("F", "F", "F"));
+                                add(new PlaceSearchItem("G", "G", "G"));
+                                add(new PlaceSearchItem("H", "H", "H"));
+                                add(new PlaceSearchItem("I", "I", "I"));
+                                add(new PlaceSearchItem("J", "J", "J"));
                             }}
                         )
                         .build()
@@ -301,13 +192,8 @@ public class PlaceServiceTest {
                         .apiType(ApiTypeEnum.NAVER)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("KB국민은행 여의도영업부")
-                                        .address("서울특별시 영등포구 여의도동 36-3")
-                                        .roadAddress("서울특별시 영등포구 국제금융로8길 26")
-                                        .build()
-                                );
+                                add(new PlaceSearchItem("H", "H", "H"));
+                                add(new PlaceSearchItem("I", "I", "I"));
                             }}
                         )
                         .build()
@@ -315,6 +201,11 @@ public class PlaceServiceTest {
             );
 
         PlaceResp resp = placeService.searchPlace(query);
-        Assertions.assertEquals(resp.getPlaces().size(), 7);
+        Assertions.assertEquals(resp.getPlaces().size(), 10);
+        String result = resp.getPlaces()
+            .stream()
+            .map(p -> p.getTitle())
+            .collect(Collectors.joining("-"));
+        Assertions.assertEquals(result, "H-I-A-B-C-D-E-F-G-J");
     }
 }

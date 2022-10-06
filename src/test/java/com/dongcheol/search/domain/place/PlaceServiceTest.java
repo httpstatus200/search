@@ -93,7 +93,7 @@ public class PlaceServiceTest {
     }
 
     @Test
-    public void Search_EmptyResult_When_FailedExternalApis() {
+    public void Search_ThrowsException_When_FailedAllApis() {
         String query = "은행";
         Mockito.when(kakaoApi.search(query, 1, 5, null))
             .thenReturn(
@@ -112,7 +112,7 @@ public class PlaceServiceTest {
     }
 
     @Test
-    public void Search_HasResult_When_SuccOneApi() {
+    public void Search_RemoveSamePlace_When_HasSamePlaces() {
         String query = "은행";
         Mockito.when(kakaoApi.search(query, 1, 5, null))
             .thenReturn(
@@ -122,18 +122,7 @@ public class PlaceServiceTest {
                         .apiType(ApiType.KAKAO)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("국민은행")
-                                        .address("서울시")
-                                        .build()
-                                );
-                                add(
-                                    PlaceSearchItem.builder()
-                                        .title("신한은행")
-                                        .address("서울시")
-                                        .build()
-                                );
+                                add(new PlaceSearchItem("카카오 뱅크", "카뱅", "카뱅"));
                             }}
                         )
                         .build()
@@ -142,13 +131,27 @@ public class PlaceServiceTest {
         Mockito.when(naverApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
-                    PlaceSearchResp.createFailResp(ApiType.NAVER)
+                    PlaceSearchResp.builder()
+                        .success(true)
+                        .apiType(ApiType.NAVER)
+                        .items(
+                            new ArrayList<PlaceSearchItem>() {{
+                                add(new PlaceSearchItem("카 카 오 뱅크 ", "카뱅", "카뱅"));
+                            }}
+                        )
+                        .build()
                 )
             );
 
         PlaceResp resp = placeService.searchPlace(query);
-        Assertions.assertEquals(resp.getItemCount(), 2);
+        Assertions.assertEquals(resp.getItemCount(), 1);
+        String result = resp.getPlaces()
+            .stream()
+            .map(p -> p.getTitle())
+            .collect(Collectors.joining("-"));
+        Assertions.assertEquals(result, "카카오 뱅크");
     }
+
 
     @Test
     public void Search_SortedResult_When_HasSamePlaces() {
@@ -178,10 +181,10 @@ public class PlaceServiceTest {
                         .apiType(ApiType.NAVER)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
-                                add(new PlaceSearchItem("A", "A", "A"));
+                                add(new PlaceSearchItem("A ", "A", "A"));
                                 add(new PlaceSearchItem("E", "E", "E"));
                                 add(new PlaceSearchItem("D", "D", "D"));
-                                add(new PlaceSearchItem("C", "C", "C"));
+                                add(new PlaceSearchItem("C ", "C", "C"));
                             }}
                         )
                         .build()
@@ -198,7 +201,7 @@ public class PlaceServiceTest {
     }
 
     @Test
-    public void Search_Retry_When_ApiFailed() {
+    public void Search_Retry_When_OneApiFailed() {
         String query = "은행";
         Mockito.when(kakaoApi.search(query, 1, 5, null))
             .thenReturn(

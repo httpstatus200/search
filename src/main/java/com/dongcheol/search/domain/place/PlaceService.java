@@ -148,7 +148,15 @@ public class PlaceService {
 
         List<PlaceInfo> sortedList = dupCountMap.values()
             .stream()
-            .sorted((v1, v2) -> (Integer.compare(v1.count, v2.count)) * -1)
+            .sorted((v1, v2) -> {
+                if (v1.count >= 2 && v2.count >= 2) {
+                    // API 추가 시 중복 카운트가 2 이상일 수 있다.
+                    // 이때 기존 Kakao 응답 결과가 바뀔 수 있음.
+                    // ex A:1, B:2, C:3 (값:카운트) 일떄 A-C-B가 되는걸 예방하기 위한 조건
+                    return 0;
+                }
+                return (Integer.compare(v1.count, v2.count)) * -1;
+            })
             .map(v -> v.placeInfo)
             .collect(Collectors.toList());
 

@@ -3,10 +3,10 @@ package com.dongcheol.search.domain.place;
 import com.dongcheol.search.domain.place.dto.PlaceResp;
 import com.dongcheol.search.global.exception.ExternalApiException;
 import com.dongcheol.search.infra.logservice.PlaceQueryLogService;
-import com.dongcheol.search.infra.placesearch.ApiTypeEnum;
 import com.dongcheol.search.infra.placesearch.PlaceSearch;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchItem;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
+import com.dongcheol.search.infra.placesearch.type.ApiType;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
@@ -98,13 +98,13 @@ public class PlaceServiceTest {
         Mockito.when(kakaoApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
-                    PlaceSearchResp.createFailResp(ApiTypeEnum.KAKAO)
+                    PlaceSearchResp.createFailResp(ApiType.KAKAO)
                 )
             );
         Mockito.when(naverApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
-                    PlaceSearchResp.createFailResp(ApiTypeEnum.NAVER)
+                    PlaceSearchResp.createFailResp(ApiType.NAVER)
                 )
             );
 
@@ -119,7 +119,7 @@ public class PlaceServiceTest {
                 Mono.just(
                     PlaceSearchResp.builder()
                         .success(true)
-                        .apiType(ApiTypeEnum.KAKAO)
+                        .apiType(ApiType.KAKAO)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
                                 add(
@@ -142,7 +142,7 @@ public class PlaceServiceTest {
         Mockito.when(naverApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
-                    PlaceSearchResp.createFailResp(ApiTypeEnum.NAVER)
+                    PlaceSearchResp.createFailResp(ApiType.NAVER)
                 )
             );
 
@@ -158,7 +158,7 @@ public class PlaceServiceTest {
                 Mono.just(
                     PlaceSearchResp.builder()
                         .success(true)
-                        .apiType(ApiTypeEnum.KAKAO)
+                        .apiType(ApiType.KAKAO)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
                                 add(new PlaceSearchItem("A", "A", "A"));
@@ -175,7 +175,7 @@ public class PlaceServiceTest {
                 Mono.just(
                     PlaceSearchResp.builder()
                         .success(true)
-                        .apiType(ApiTypeEnum.NAVER)
+                        .apiType(ApiType.NAVER)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
                                 add(new PlaceSearchItem("A", "A", "A"));
@@ -205,7 +205,7 @@ public class PlaceServiceTest {
                 Mono.just(
                     PlaceSearchResp.builder()
                         .success(true)
-                        .apiType(ApiTypeEnum.KAKAO)
+                        .apiType(ApiType.KAKAO)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
                                 add(new PlaceSearchItem("A", "A", "A"));
@@ -223,7 +223,7 @@ public class PlaceServiceTest {
                 Mono.just(
                     PlaceSearchResp.builder()
                         .success(true)
-                        .apiType(ApiTypeEnum.KAKAO)
+                        .apiType(ApiType.KAKAO)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
                                 add(new PlaceSearchItem("F", "F", "F"));
@@ -236,7 +236,7 @@ public class PlaceServiceTest {
         Mockito.when(naverApi.search(query, 1, 5, null))
             .thenReturn(
                 Mono.just(
-                    PlaceSearchResp.createFailResp(ApiTypeEnum.NAVER)
+                    PlaceSearchResp.createFailResp(ApiType.NAVER)
                 )
             );
 
@@ -257,7 +257,7 @@ public class PlaceServiceTest {
                 Mono.just(
                     PlaceSearchResp.builder()
                         .success(true)
-                        .apiType(ApiTypeEnum.KAKAO)
+                        .apiType(ApiType.KAKAO)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
                                 add(new PlaceSearchItem("A", "A", "A"));
@@ -275,7 +275,7 @@ public class PlaceServiceTest {
                 Mono.just(
                     PlaceSearchResp.builder()
                         .success(true)
-                        .apiType(ApiTypeEnum.KAKAO)
+                        .apiType(ApiType.KAKAO)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
                                 add(new PlaceSearchItem("F", "F", "F"));
@@ -293,7 +293,7 @@ public class PlaceServiceTest {
                 Mono.just(
                     PlaceSearchResp.builder()
                         .success(true)
-                        .apiType(ApiTypeEnum.NAVER)
+                        .apiType(ApiType.NAVER)
                         .items(
                             new ArrayList<PlaceSearchItem>() {{
                                 add(new PlaceSearchItem("H", "H", "H"));

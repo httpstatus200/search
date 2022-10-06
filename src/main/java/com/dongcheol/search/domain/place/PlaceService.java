@@ -8,9 +8,9 @@ import com.dongcheol.search.global.exception.ExternalApiException;
 import com.dongcheol.search.global.type.ErrorCode;
 import com.dongcheol.search.infra.logservice.PlaceQueryLogService;
 import com.dongcheol.search.infra.logservice.dto.PlaceQueryLog;
-import com.dongcheol.search.infra.placesearch.ApiTypeEnum;
 import com.dongcheol.search.infra.placesearch.PlaceSearch;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
+import com.dongcheol.search.infra.placesearch.type.ApiType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -38,12 +38,12 @@ public class PlaceService {
     private final PlaceQueryLogService logService;
     private final CacheManager cacheManager;
 
-    private static final Map<ApiTypeEnum, ApiTypeEnum> SPARE_API_MAPPER = new HashMap() {{
-        put(ApiTypeEnum.NAVER, ApiTypeEnum.KAKAO);
-        put(ApiTypeEnum.KAKAO, ApiTypeEnum.NAVER);
+    private static final Map<ApiType, ApiType> SPARE_API_MAPPER = new HashMap() {{
+        put(ApiType.NAVER, ApiType.KAKAO);
+        put(ApiType.KAKAO, ApiType.NAVER);
     }};
 
-    private static final ApiTypeEnum[] API_PRIORITY = {ApiTypeEnum.KAKAO, ApiTypeEnum.NAVER};
+    private static final ApiType[] API_PRIORITY = {ApiType.KAKAO, ApiType.NAVER};
 
     private static final int DEFAULT_API_PAGE = 1;
     private static final int DEFAULT_API_SIZE = 5;
@@ -82,14 +82,14 @@ public class PlaceService {
 
         Long start = System.currentTimeMillis();
         List<PlaceSearchResp> respList = Flux.merge(
-                createApiCaller(ApiTypeEnum.KAKAO, query, DEFAULT_API_PAGE, DEFAULT_API_SIZE, null),
-                createApiCaller(ApiTypeEnum.NAVER, query, DEFAULT_API_PAGE, DEFAULT_API_SIZE, null)
+                createApiCaller(ApiType.KAKAO, query, DEFAULT_API_PAGE, DEFAULT_API_SIZE, null),
+                createApiCaller(ApiType.NAVER, query, DEFAULT_API_PAGE, DEFAULT_API_SIZE, null)
             )
             .collectList()
             .block();
 
-        Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = classifyApiData(respList);
-        Map<ApiTypeEnum, PlaceSearchResp> failedApis = respList.stream()
+        Map<ApiType, List<PlaceInfo>> apiResultMap = classifyApiData(respList);
+        Map<ApiType, PlaceSearchResp> failedApis = respList.stream()
             .filter(resp -> !resp.isSuccess())
             .collect(Collectors.toMap(resp -> resp.getApiType(), resp -> resp));
 
@@ -97,7 +97,7 @@ public class PlaceService {
             throw new ExternalApiException("요청한 모든 API가 실패했습니다.", ErrorCode.EXTERNAL_API_ERRROR);
         }
 
-        Map<ApiTypeEnum, PlaceSearchResp> lackedApis = respList.stream()
+        Map<ApiType, PlaceSearchResp> lackedApis = respList.stream()
             .filter(resp -> resp.isSuccess() && resp.getItems().size() < 5)
             .collect(Collectors.toMap(resp -> resp.getApiType(), resp -> resp));
 
@@ -109,7 +109,7 @@ public class PlaceService {
 
                 // 네이버의 경우 페이징 지원이 안되기 때문에 sort 파라미터를 사용해서 가져온다.
                 // 이때 네이버 응답끼리 중복된 값이 들어올 수도 있기 때문에 필터링을 진행한다.
-                if (entry.getKey() == ApiTypeEnum.NAVER) {
+                if (entry.getKey() == ApiType.NAVER) {
                     List<PlaceInfo> newPlaces = entry.getValue();
                     Map<String, Boolean> checkKeyMap = places.stream()
                         .collect(Collectors.toMap(p -> samePlaceCheckKey(p), p -> true));
@@ -126,7 +126,7 @@ public class PlaceService {
             });
 
         List<PlaceInfo> sortedPlacesByPriority = new ArrayList<>();
-        for (ApiTypeEnum type : API_PRIORITY) {
+        for (ApiType type : API_PRIORITY) {
             sortedPlacesByPriority.addAll(apiResultMap.get(type));
         }
 
@@ -168,7 +168,7 @@ public class PlaceService {
     }
 
     private Mono<PlaceSearchResp> createApiCaller(
-        ApiTypeEnum type,
+        ApiType type,
         String query,
         int page,
         int size,
@@ -184,17 +184,17 @@ public class PlaceService {
         }
     }
 
-    private Map<ApiTypeEnum, List<PlaceInfo>> ensureApiResponses(
-        Map<ApiTypeEnum, PlaceSearchResp> failedApis,
-        Map<ApiTypeEnum, PlaceSearchResp> lackedApis,
+    private Map<ApiType, List<PlaceInfo>> ensureApiResponses(
+        Map<ApiType, PlaceSearchResp> failedApis,
+        Map<ApiType, PlaceSearchResp> lackedApis,
         String query
     ) {
-        Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = new HashMap<>();
+        Map<ApiType, List<PlaceInfo>> apiResultMap = new HashMap<>();
 
         failedApis.entrySet()
             .stream()
             .forEach(entry -> {
-                ApiTypeEnum spareType = SPARE_API_MAPPER.get(entry.getKey());
+                ApiType spareType = SPARE_API_MAPPER.get(entry.getKey());
                 if (lackedApis.containsKey(spareType) || failedApis.containsKey(spareType)) {
                     return;
                 }
@@ -211,7 +211,7 @@ public class PlaceService {
         lackedApis.entrySet()
             .stream()
             .forEach(entry -> {
-                ApiTypeEnum spareType = SPARE_API_MAPPER.get(entry.getKey());
+                ApiType spareType = SPARE_API_MAPPER.get(entry.getKey());
                 if (lackedApis.containsKey(spareType) || failedApis.containsKey(spareType)) {
                     return;
                 }
@@ -237,11 +237,11 @@ public class PlaceService {
     }
 
     private Mono<PlaceSearchResp> createSpareApiCaller(
-        ApiTypeEnum spareType,
+        ApiType spareType,
         String query
     ) {
         MultiValueMap<String, String> params = null;
-        if (spareType == ApiTypeEnum.NAVER) {
+        if (spareType == ApiType.NAVER) {
             params = new LinkedMultiValueMap<String, String>() {{
                 put("sort", new ArrayList<>());
                 add("sort", "comment");
@@ -256,8 +256,8 @@ public class PlaceService {
         );
     }
 
-    private Map<ApiTypeEnum, List<PlaceInfo>> classifyApiData(List<PlaceSearchResp> respList) {
-        Map<ApiTypeEnum, List<PlaceInfo>> apiResultMap = new HashMap<>();
+    private Map<ApiType, List<PlaceInfo>> classifyApiData(List<PlaceSearchResp> respList) {
+        Map<ApiType, List<PlaceInfo>> apiResultMap = new HashMap<>();
         respList.stream()
             .forEach(resp -> {
                 List<PlaceInfo> placeInfos = apiRespToPlaceInfoList(resp);

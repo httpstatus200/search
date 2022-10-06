@@ -2,6 +2,7 @@ package com.dongcheol.search.infra.placesearch;
 
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchItem;
 import com.dongcheol.search.infra.placesearch.dto.PlaceSearchResp;
+import com.dongcheol.search.infra.placesearch.type.ApiType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -85,7 +86,7 @@ public class Kakao implements PlaceSearch {
                 .collect(Collectors.toList());
 
             PlaceSearchResp resp = PlaceSearchResp.builder()
-                .apiType(ApiTypeEnum.KAKAO)
+                .apiType(ApiType.KAKAO)
                 .itemCount(placeSearchItems.size())
                 .items(placeSearchItems)
                 .success(true)

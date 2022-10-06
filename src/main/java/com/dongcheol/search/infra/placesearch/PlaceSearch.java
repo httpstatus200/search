@@ -6,6 +6,10 @@ import reactor.core.publisher.Mono;
 
 public interface PlaceSearch {
 
-    Mono<PlaceSearchResp> search(String query, int page, int size,
-        MultiValueMap<String, String> params);
+    Mono<PlaceSearchResp> search(
+        String query,
+        int page,
+        int size,
+        MultiValueMap<String, String> params
+    );
 }

@@ -2,7 +2,6 @@
 GET http://localhost:8080/v1/place?q=
 
 
-
 ### 카카오 5, 네이버 5, 중복 3
 GET http://localhost:8080/v1/place?q=국민은행 여의도
 
@@ -15,6 +14,5 @@ GET http://localhost:8080/v1/place?q=양양 양고기
 ### 카카오 1, 네이버 5, 중복 1 (네이버 추가 요청으로 네이버 제공 데이터 9개)
 GET http://localhost:8080/v1/place?q=안동 바버샵
 
-
-### 인기 검색어
+### 인기 검색어 TOP 10, 비동기로 카운팅되고 있어요. (동기화 간격: 10s)
 GET http://localhost:8080/v1/place/queries/top10

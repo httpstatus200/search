@@ -1,12 +1,12 @@
-package com.dongcheol.search.infra.placesearch;
+package com.dongcheol.search.infra.placesearch.type;
 
-public enum ApiTypeEnum {
+public enum ApiType {
     KAKAO("kakao"),
     NAVER("naver");
 
     private final String name;
 
-    ApiTypeEnum(String name) {
+    ApiType(String name) {
         this.name = name;
     }
 

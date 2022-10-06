@@ -1,6 +1,6 @@
 package com.dongcheol.search.infra.placesearch.dto;
 
-import com.dongcheol.search.infra.placesearch.ApiTypeEnum;
+import com.dongcheol.search.infra.placesearch.type.ApiType;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Builder;
@@ -12,12 +12,12 @@ import lombok.ToString;
 @Builder
 public class PlaceSearchResp {
 
-    private ApiTypeEnum apiType;
+    private ApiType apiType;
     private boolean success;
     private int itemCount;
     private List<PlaceSearchItem> items;
 
-    public static PlaceSearchResp createFailResp(ApiTypeEnum apiType) {
+    public static PlaceSearchResp createFailResp(ApiType apiType) {
         return PlaceSearchResp.builder()
             .apiType(apiType)
             .success(false)

@@ -19,15 +19,15 @@
    > curl -X GET
    --location "http://localhost:8080/v1/place?q=%EB%B0%A4%EB%B9%84%EB%85%B8%EC%95%84%EC%9A%B8%EB%A0%9B"
    >
-   > // 카카오 5, 네이버 4, 중복 1, 카카오 추가 요청으로 카카오 제공 데이터 6개 (검색어: 양양 양고기)
+   > // 카카오 5, 네이버 4, 중복 1, 카카오 추가 요청으로 카카오 제공 데이터 6개 (검색어: 양양 양고기)  
    > curl -X GET
    --location "http://localhost:8080/v1/place?q=%EC%96%91%EC%96%91+%EC%96%91%EA%B3%A0%EA%B8%B0"
    >
-   > // 카카오 1, 네이버 5, 중복 1, 네이버 추가 요청으로 네이버 제공 데이터 9개 (검색어: 안동 바버샵)
+   > // 카카오 1, 네이버 5, 중복 1, 네이버 추가 요청으로 네이버 제공 데이터 9개 (검색어: 안동 바버샵)  
    > curl -X GET
    --location "http://localhost:8080/v1/place?q=%EC%95%88%EB%8F%99+%EB%B0%94%EB%B2%84%EC%83%B5"
    >
-   > // 인기 검색어 TOP 10, 비동기로 구현해서 검색 후 즉시 요청시 바로 카운팅이 안될 수 있어요. (동기화 간격: 10s)  
+   > // 인기 검색어 TOP 10, 비동기로 카운팅되고 있어요. (동기화 간격: 10s)  
    > curl -X GET --location "http://localhost:8080/v1/place/queries/top10"
 
 ## 시스템 디자인 요약

@@ -102,7 +102,7 @@
 > <비동기 저장>
 > ![async-save-log](images/async-save-log.png)
 >
-> 처리량(Throughput)을 보면 `15594.3/sec`와 `14349.7/sec`으로 영향을 줄 수 있는 점을 확인했습니다.
+> 처리량(Throughput)을 보면 `14349.7/sec`와 `15594.3/sec`으로 성능에 영향을 줄 수 있는 점을 확인했습니다.
 
 ### 2) 새로운 검색 API 추가 시 변경 영역 최소화에 대한 고려
 
@@ -140,7 +140,7 @@ public interface PlaceSearch {
 
 #### b) 정렬 방식
 
-먼저 API 응답 데이터를 받습니다.
+비즈니스 로직 내에서도 다른 API가 추가되었을 때 유연하게 대응할 수 있도록 구현했습니다. 먼저 API 응답 데이터를 받습니다.
 
 ![api-resp-data](images/api-resp-data.png)
 
@@ -161,13 +161,13 @@ public interface PlaceSearch {
 그리고 중복 카운트를 기반으로 내림차순으로 정렬합니다.
 > API가 추가되어 특정 데이터가 2 이상일 수 있습니다. 이런 상황을 고려하여 정렬할 때 비교하는 두 데이터가 2 이상이라면 순서를 바꾸지 않도록 분기 처리가 되어
 > 있습니다.  
-> e.g) `{A: 1, B: 2, C:3 }`를 정렬하면 `B-C-A`
+> e.g) `{A: 1, B: 2, C:3}`를 정렬하면 `B-C-A`
 >
 > 이런 상황을 고려한 이유는 외부 API가 추가되었을 때 중복 카운트가 3이 될 수 있기 때문입니다.
 
 ![final-sorted-data](images/final-sorted-data.png)
 
-이렇게 알고리즘을 구현했을때 외부 API를 추가하는 과정은 아래처럼 단순해집니다.
+이렇게 알고리즘을 구현했을때 비즈니스 로직에 외부 API를 추가하는 과정은 아래처럼 단순해집니다.
 
 1) API 요청 로직을 추가한다.
 2) PriorityList에 타입을 추가한다.
@@ -191,3 +191,5 @@ public interface PlaceSearch {
 ![popular-query-sys-design](images/popular-query-sys-design.png)
 
 위 구조에서 워커는 주기적으로 DB 데이터를 캐싱합니다. 그리고 API는 캐시에 데이터가 존재한다면 캐시에서 데이터를 가져옵니다.
+
+DB 요청이 줄어든 만큼 API 성능도 향상됩니다.

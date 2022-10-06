@@ -140,11 +140,6 @@ public class PlaceService {
 
             dupCountMap.put(key, new PlaceInfoCounter(placeInfo));
         });
-        dupCountMap.entrySet()
-            .stream()
-            .forEach(entry -> {
-                log.info(entry.getKey() + " = " + entry.getValue().count);
-            });
 
         List<PlaceInfo> sortedList = dupCountMap.values()
             .stream()

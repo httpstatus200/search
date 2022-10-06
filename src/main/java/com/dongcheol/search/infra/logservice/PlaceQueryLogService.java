@@ -21,7 +21,7 @@ public class PlaceQueryLogService {
 
     @PostConstruct
     public void init() {
-        Thread logCountSaver = new Thread(new PlaceQueryLogSaver(queue, placeQueryLogStore));
+        Thread logCountSaver = new Thread(new PlaceQueryLogSystem(queue, placeQueryLogStore));
         logCountSaver.start();
     }
 

@@ -5,13 +5,13 @@ import java.util.concurrent.BlockingQueue;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-class PlaceQueryLogSaver implements Runnable {
+class PlaceQueryLogSystem implements Runnable {
 
     private BlockingQueue<PlaceQueryLog> queue;
 
     private PlaceQueryLogStore placeQueryLogStore;
 
-    public PlaceQueryLogSaver(
+    public PlaceQueryLogSystem(
         BlockingQueue<PlaceQueryLog> queue,
         PlaceQueryLogStore placeQueryLogStore
     ) {

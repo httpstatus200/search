@@ -40,7 +40,6 @@ public class PlaceController {
 
     @GetMapping("/queries/top10")
     public ResponseEntity<PopularQueryResp> queryTop10() {
-        log.info("top 10");
         PopularQueryResp resp = this.placeService.queryTop10();
         return ResponseEntity.status(HttpStatus.OK).body(resp);
     }

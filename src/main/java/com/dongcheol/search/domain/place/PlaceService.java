@@ -286,8 +286,9 @@ public class PlaceService {
     }
 
     public PopularQueryResp queryTop10() {
+        String cacheKey = "queryTop10";
         Cache cache = this.cacheManager.getCache(PLACES_CACHE);
-        PopularQueryResp cachedData = cache.get("queryTop10", PopularQueryResp.class);
+        PopularQueryResp cachedData = cache.get(cacheKey, PopularQueryResp.class);
         if (cachedData != null) {
             return cachedData;
         }
@@ -297,7 +298,10 @@ public class PlaceService {
             .map(lc -> new PopularQuery(lc.getQuery(), lc.getCount()))
             .collect(Collectors.toList());
 
-        return new PopularQueryResp(popularQueries.size(), popularQueries);
+        PopularQueryResp result = new PopularQueryResp(popularQueries.size(), popularQueries);
+        cache.put(cacheKey, result);
+
+        return result;
     }
 
     private class PlaceInfoCounter {

@@ -105,43 +105,43 @@ public class PlaceService {
             .entrySet()
             .stream()
             .forEach(entry -> {
-                List<PlaceInfo> infoList = apiResultMap.get(entry.getKey());
+                List<PlaceInfo> places = apiResultMap.get(entry.getKey());
 
-                // 네이버의 경우 페이징 지원이 안되기 때문에 정렬을 방식을 변경해서 가져온다.
-                // 이때 중복된 값이 들어올 수도 있기 때문에 중복값 필터링을 진행한다.
+                // 네이버의 경우 페이징 지원이 안되기 때문에 sort 파라미터를 사용해서 가져온다.
+                // 이때 네이버 응답끼리 중복된 값이 들어올 수도 있기 때문에 필터링을 진행한다.
                 if (entry.getKey() == ApiTypeEnum.NAVER) {
-                    List<PlaceInfo> newList = entry.getValue();
-                    Map<String, Boolean> infoMap = infoList.stream()
+                    List<PlaceInfo> newPlaces = entry.getValue();
+                    Map<String, Boolean> checkKeyMap = places.stream()
                         .collect(Collectors.toMap(p -> samePlaceCheckKey(p), p -> true));
 
-                    List<PlaceInfo> naverResult = newList.stream()
-                        .filter(info -> !infoMap.containsKey(samePlaceCheckKey(info)))
+                    List<PlaceInfo> naverResult = newPlaces.stream()
+                        .filter(place -> !checkKeyMap.containsKey(samePlaceCheckKey(place)))
                         .collect(Collectors.toList());
 
-                    infoList.addAll(naverResult);
+                    places.addAll(naverResult);
                     return;
                 }
 
-                infoList.addAll(entry.getValue());
+                places.addAll(entry.getValue());
             });
 
-        List<PlaceInfo> placesSortedPriority = new ArrayList<>();
+        List<PlaceInfo> sortedPlacesByPriority = new ArrayList<>();
         for (ApiTypeEnum type : API_PRIORITY) {
-            placesSortedPriority.addAll(apiResultMap.get(type));
+            sortedPlacesByPriority.addAll(apiResultMap.get(type));
         }
 
-        Map<String, PlaceInfoCounter> dupCountMap = new LinkedHashMap<>();
-        placesSortedPriority.forEach(placeInfo -> {
+        Map<String, PlaceInfoCounter> samePlaceCountMap = new LinkedHashMap<>();
+        sortedPlacesByPriority.forEach(placeInfo -> {
             String key = samePlaceCheckKey(placeInfo);
-            if (dupCountMap.containsKey(key)) {
-                dupCountMap.get(key).increase();
+            if (samePlaceCountMap.containsKey(key)) {
+                samePlaceCountMap.get(key).increase();
                 return;
             }
 
-            dupCountMap.put(key, new PlaceInfoCounter(placeInfo));
+            samePlaceCountMap.put(key, new PlaceInfoCounter(placeInfo));
         });
 
-        List<PlaceInfo> sortedList = dupCountMap.values()
+        List<PlaceInfo> sortedPlaces = samePlaceCountMap.values()
             .stream()
             .sorted((v1, v2) -> {
                 if (v1.count >= 2 && v2.count >= 2) {
@@ -159,8 +159,8 @@ public class PlaceService {
         log.debug("검색 처리 요청 시간: " + end + "ms");
 
         PlaceResp result = PlaceResp.builder()
-            .places(sortedList)
-            .itemCount(sortedList.size())
+            .places(sortedPlaces)
+            .itemCount(sortedPlaces.size())
             .build();
 
         cache.put(query, result);

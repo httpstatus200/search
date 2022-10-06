@@ -1,5 +1,6 @@
-package com.dongcheol.search.global;
+package com.dongcheol.search.global.exception;
 
+import com.dongcheol.search.global.type.ErrorCode;
 import lombok.Getter;
 
 @Getter

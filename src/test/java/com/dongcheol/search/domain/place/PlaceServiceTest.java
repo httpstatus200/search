@@ -1,7 +1,7 @@
 package com.dongcheol.search.domain.place;
 
 import com.dongcheol.search.domain.place.dto.PlaceResp;
-import com.dongcheol.search.global.ExternalApiException;
+import com.dongcheol.search.global.exception.ExternalApiException;
 import com.dongcheol.search.infra.logservice.PlaceQueryLogService;
 import com.dongcheol.search.infra.placesearch.ApiTypeEnum;
 import com.dongcheol.search.infra.placesearch.PlaceSearch;

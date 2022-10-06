@@ -283,6 +283,12 @@ public class PlaceService {
     }
 
     public PopularQueryResp queryTop10() {
+        Cache cache = this.cacheManager.getCache(PLACES_CACHE);
+        PopularQueryResp cachedData = cache.get("queryTop10", PopularQueryResp.class);
+        if (cachedData != null) {
+            return cachedData;
+        }
+
         List<QueryLogCount> logCounts = this.queryLogCountRepository.findTop10ByOrderByCountDesc();
         List<PopularQuery> popularQueries = logCounts.stream()
             .map(lc -> new PopularQuery(lc.getQuery(), lc.getCount()))
